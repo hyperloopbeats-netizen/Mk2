@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "project": "MK-2D-SpriteMesh-Autonomous",
+    "codePart": "CODE-6",
+    "buildDate": "2026-11-19",
+    "sourceFile": "src/engine/mesh/index.ts",
+    "targetEnvironment": "Google AI Studio / React + TypeScript + HTML5 Canvas 2D",
+    "moduleCount": 11,
+    "features": [
+      "inside-canvas-diagnostic-overlay",
+      "live-spring-stiffness-and-damping-sliders",
+      "spring-physics-presets-bouncy-stiff-watery",
+      "self-healing-watchdog-and-snapshot-recovery",
+      "finish-him-and-stage-infusion-system",
+      "contract-schema-runtime-validator-m11",
+      "deterministic-telemetry-timeline-export"
+    ]
+  },
+  "systemInstruction": "You are integrating and extending MK-2D-SpriteMesh-Autonomous (CODE-6, 2026-11-19). Preserve strict module boundaries across M01_ArcadeManualSpec/M01_Config through M11_ManifestInspector. Keep fixed-timestep (1/60s) deterministic physics, substeps, spring-damper mesh dynamics (meshSpringStiffness, meshSpringDamping, springPreset), watchdog sanitization (M08_Watchdog), inside-canvas diagnostic telemetry, and runtime contract validation (M11_ManifestInspector) intact when proposing new features or refinements.",
+  "contractSchema": {
+    "sharedState": {
+      "config": {
+        "cabinetDip": {
+          "freePlay": "boolean",
+          "difficulty": "number (1..5)",
+          "autoAdaptDifficulty": "boolean",
+          "roundTime": "number",
+          "bloodGore": "boolean",
+          "slamTilt": "boolean"
+        },
+        "infusion": {
+          "stageIndex": "number (0..2)",
+          "activeFinisherWindow": "boolean",
+          "finisherTimer": "number",
+          "lastFinisher": "string",
+          "stageInfusionLevel": "number (0..100)",
+          "hazardPulsePhase": "number",
+          "springPreset": "'BOUNCY' | 'STIFF' | 'WATERY' | 'CUSTOM'",
+          "meshSpringStiffness": "number (default 265)",
+          "meshSpringDamping": "number (default 22)",
+          "shakeIntensity": "number (0..18)"
+        },
+        "telemetry": {
+          "fps": "number",
+          "tickCount": "number",
+          "substepCount": "number",
+          "hitstopFrames": "number",
+          "roundNumber": "number",
+          "roundClock": "number",
+          "roundPhase": "'FIGHT' | 'FINISH_HIM' | 'ROUND_OVER'",
+          "selfHealEnabled": "boolean",
+          "healsPerformed": "number",
+          "lastHealReason": "string",
+          "healLog": "Array<{ tick: number, reason: string }>",
+          "showMesh": "boolean",
+          "showDiagnostics": "boolean",
+          "p1Autonomous": "boolean",
+          "p2Autonomous": "boolean"
+        }
+      },
+      "fighterEntity": {
+        "slot": "'p1' | 'p2'",
+        "fighterId": "string",
+        "x": "number",
+        "y": "number",
+        "vx": "number",
+        "vy": "number",
+        "facing": "1 | -1",
+        "moveDir": "-1 | 0 | 1",
+        "blocking": "boolean",
+        "grounded": "boolean",
+        "hp": "number (0..100)",
+        "combo": "number",
+        "wins": "number",
+        "roundAwarded": "boolean",
+        "score": "number",
+        "squashY": "number",
+        "state": "string",
+        "animTimer": "number",
+        "invulnTimer": "number",
+        "hasConnectedThisAttack": "boolean",
+        "spawnedProj": "boolean",
+        "worldMesh": "Record<string, { wx: number, wy: number, r: number, type: 'ROOT' | 'HURT' | 'HIT' | 'LIMB' }>",
+        "meshDyn": "Record<string, { wx: number, wy: number, vx: number, vy: number }> | null",
+        "activeFrame": "FrameData | null",
+        "oppRef": "FighterEntity | null"
+      },
+      "manifestHealth": {
+        "valid": "boolean",
+        "checkedAtTick": "number",
+        "violations": "string[]",
+        "moduleCount": "number",
+        "activePreset": "'BOUNCY' | 'STIFF' | 'WATERY' | 'CUSTOM'"
+      }
+    },
+    "moduleInterfaces": [
+      { "module": "M01_ArcadeManualSpec & M01_Config", "exports": ["M01_ArcadeManualSpec", "STAGE_PRESETS", "SPRING_PRESETS", "M01_Config", "resetM01Config"] },
+      { "module": "M02_SpriteMeshAtlas", "methods": ["registerFighter(fighterId, spec)", "loadSpriteSheet(sheetId, url)", "defaultMeshForState(state, phaseRatio, squashY, meshScale)", "getFrameData(fighterId, state, frameIdx, squashY)"] },
+      { "module": "M03_InputBus", "methods": ["init()", "destroy()", "pressVirtualButton(btn)", "setVirtualStick(patch)", "pollStick(slot, facing)", "hasQuarterCircleForward(slot)", "resolveManualMove(f, opp, rawBtn, stick)", "pushCommand(slot, cmd)", "consumeCommand(slot)", "tickQueues()"] },
+      { "module": "M04_MeshPhysics", "methods": ["addShake(amount)", "ensureMeshDynamics(f)", "integrateKinematics(f, opp, subDt)", "solveConstraints(f, opp)", "advanceAnimation(f, dt)", "spawnProjectile(owner, opp)", "stepProjectiles(dt)", "triggerFinisher(attacker, defender, label)"] },
+      { "module": "M05_CombatResolver", "methods": ["isBlocking(defender, attackerFacing, attackSpec)", "applyImpact(attacker, defender, spec, hitX, hitY)", "resolve(attacker, defender)"] },
+      { "module": "M06_AutonomousAI", "methods": ["stepFighterAI(f, opp, slot)", "tickRoundAndFinisher(p1, p2, dt)"] },
+      { "module": "M07_AudioFx", "methods": ["tone(freqStart, freqEnd, type, dur, vol)", "playHit(heavy)", "playBlock()", "playFinisher()"] },
+      { "module": "M08_Watchdog", "methods": ["recordHeal(reason)", "enforceCabinetDipRules()", "captureSnapshot(state)", "restoreSnapshot(state)", "sanitizeFighter(f, fallbackX, fallbackFacing)", "exportStudioPayload(state)"] },
+      { "module": "M09_Scheduler", "methods": ["applyFighterControls(f, slot, autoEnabled)", "fixedTick(state)", "start(state, onTick)", "stop()"] },
+      { "module": "M10_Renderer", "methods": ["attachCanvas(canvas)", "getStagePattern(stage, infusionLevel)", "spawnSpark(x, y, color)", "drawFighter(f)", "drawHud(p1, p2)", "drawDiagnostics(state)", "render(state)", "boot(canvas, onTick)"] },
+      { "module": "M11_ManifestInspector", "methods": ["validateContracts(config, state, manifest)", "recordTelemetryFrame(config, state)", "getTimeline()", "clearTimeline()", "buildGoldenMasterExport(config, state, manifest)"] }
+    ]
+  },
+  "modules": [
+    {
+      "id": "M01",
+      "name": "M01_ArcadeManualSpec & M01_Config",
+      "filename": "m01Config.ts",
+      "extension": "ts",
+      "role": "Arcade manual frame/damage table, stage presets, spring presets (Bouncy/Stiff/Watery), and global config/telemetry state.",
+      "code": "export const M01_ArcadeManualSpec = {\n  buildDate: BUILD_DATE,\n  codePart: CODE_PART,\n  defaultRoundSeconds: 99,\n  finisherWindowSeconds: 4.0,\n  buttons: Object.freeze({\n    START: 'Enter', UP: 'KeyW', DOWN: 'KeyS', LEFT: 'KeyA', RIGHT: 'KeyD',\n    HP: 'KeyU', LP: 'KeyI', BL: 'KeyO', HK: 'KeyJ', LK: 'KeyK'\n  }),\n  moveValues: Object.freeze({\n    HP:         { startup: 2, active: [2, 3],    recovery: 4, damage: 10, chip: 1, hitstun: 13, blockstun: 8,  kbX: 140, launchY: 0 },\n    LP:         { startup: 2, active: [2, 3],    recovery: 3, damage: 7,  chip: 1, hitstun: 11, blockstun: 7,  kbX: 110, launchY: 0 },\n    HK:         { startup: 3, active: [3, 4],    recovery: 6, damage: 15, chip: 2, hitstun: 17, blockstun: 11, kbX: 220, launchY: 0 },\n    LK:         { startup: 2, active: [2, 3],    recovery: 4, damage: 9,  chip: 1, hitstun: 12, blockstun: 8,  kbX: 130, launchY: 0 },\n    UPPERCUT:   { startup: 3, active: [3, 4, 5], recovery: 9, damage: 20, chip: 3, hitstun: 24, blockstun: 14, kbX: 150, launchY: -620 },\n    SWEEP:      { startup: 3, active: [3, 4],    recovery: 8, damage: 12, chip: 2, hitstun: 20, blockstun: 12, kbX: 120, launchY: -220, knockdown: true },\n    ROUNDHOUSE: { startup: 4, active: [4, 5],    recovery: 9, damage: 17, chip: 3, hitstun: 19, blockstun: 13, kbX: 270, launchY: -160 },\n    THROW:      { startup: 2, active: [2],       recovery: 7, damage: 16, chip: 0, hitstun: 22, blockstun: 0,  kbX: 290, launchY: -340, unblockableClose: true },\n    PROJECTILE: { startup: 3, active: [3, 4],    recovery: 8, damage: 13, chip: 2, hitstun: 16, blockstun: 11, kbX: 190, launchY: 0, spawnProjFrame: 3 }\n  })\n};\n\nexport const STAGE_PRESETS = [\n  { id: 'THE_PIT',       name: 'THE PIT',       floorFill: '#1b2538', rimStroke: '#38bdf8', hazardAmp: 0.4, gridPitch: 24 },\n  { id: 'LIVING_FOREST', name: 'LIVING FOREST', floorFill: '#172922', rimStroke: '#34d399', hazardAmp: 0.7, gridPitch: 32 },\n  { id: 'GOROS_LAIR',    name: \"GORO'S LAIR\",   floorFill: '#2a1822', rimStroke: '#f59e0b', hazardAmp: 1.0, gridPitch: 20 }\n];\n\nexport const SPRING_PRESETS = Object.freeze({\n  bouncy: { id: 'bouncy', stiffness: 190, damping: 6 },\n  stiff:  { id: 'stiff',  stiffness: 560, damping: 46 },\n  watery: { id: 'watery', stiffness: 95,  damping: 14 }\n});\n\nexport const M01_Config = createDefaultM01Config();"
+    },
+    {
+      "id": "M02",
+      "name": "M02_SpriteMeshAtlas",
+      "filename": "m02SpriteMeshAtlas.ts",
+      "extension": "ts",
+      "role": "Fighter roster registry, animation frame metadata, and procedural 2D movement mesh node generation.",
+      "code": "export const M02_SpriteMeshAtlas = {\n  sheets: new Map(),\n  fighters: new Map(),\n  rosterOrder: ['SCORPION_MK_REMIX', 'SUBZERO_MK_REMIX', 'RAIDEN_MK_REMIX'],\n  registerFighter(fighterId, spec) { this.fighters.set(fighterId, spec); },\n  loadSpriteSheet(sheetId, url) { /* loads sheet with watchdog fallback */ },\n  defaultMeshForState(state, phaseRatio = 0, squashY = 1, meshScale = 1) { /* returns root/pelvis/torso/head/hands/feet nodes */ },\n  getFrameData(fighterId, state, frameIdx, squashY = 1) { /* resolves manualMove active window & nodes */ }\n};"
+    },
+    {
+      "id": "M03",
+      "name": "M03_InputBus",
+      "filename": "m03InputBus.ts",
+      "extension": "ts",
+      "role": "Keyboard & virtual stick polling, directional motion history, quarter-circle projectile detection, and manual command resolution.",
+      "code": "export const M03_InputBus = {\n  keysDown: new Set(), queues: { p1: [], p2: [] }, history: { p1: [], p2: [] },\n  init() { /* binds WASD + UIOJK */ },\n  destroy() { /* cleans listeners */ },\n  pressVirtualButton(btn) { this.pushCommand('p1', btn); },\n  setVirtualStick(patch) { Object.assign(this.virtualStick, patch); },\n  pollStick(slot, facing) { /* returns { moveX, crouch, blocking } & logs history */ },\n  hasQuarterCircleForward(slot) { /* matches D -> DF -> F */ },\n  resolveManualMove(f, opp, rawBtn, stick) { /* resolves uppercut, sweep, roundhouse, throw, projectile, finisher */ },\n  pushCommand(slot, cmd) { /* TTL 10 buffer */ },\n  consumeCommand(slot) { /* pops next valid cmd */ },\n  tickQueues() { /* decays cmd TTL & motion age */ }\n};"
+    },
+    {
+      "id": "M04",
+      "name": "M04_MeshPhysics",
+      "filename": "m04MeshPhysics.ts",
+      "extension": "ts",
+      "role": "Spring-damper 2D mesh integration using meshSpringStiffness and meshSpringDamping, bone relaxation, arena bounds, projectiles, and stage finishers.",
+      "code": "export const M04_MeshPhysics = {\n  projectiles: [],\n  addShake(amount) { M01_Config.infusion.shakeIntensity = Math.min(18, Math.max(M01_Config.infusion.shakeIntensity, amount)); },\n  ensureMeshDynamics(f) { /* seeds wx/wy/vx/vy per mesh node */ },\n  integrateKinematics(f, opp, subDt) { /* gravity, walk/friction, spring-damper integration */ },\n  solveConstraints(f, opp) { /* arena bounds, minSep pushbox, pelvis-torso-head bone relax */ },\n  advanceAnimation(f, dt) { /* 12fps animation step + squashY recovery */ },\n  spawnProjectile(owner, opp) { /* spawns projectile on spawnProjFrame */ },\n  stepProjectiles(dt) { /* steps & checks HURT node overlap */ },\n  triggerFinisher(attacker, defender, label) { /* KO + stage infusion + stage cycle + impulse */ }\n};"
+    },
+    {
+      "id": "M05",
+      "name": "M05_CombatResolver",
+      "filename": "m05CombatResolver.ts",
+      "extension": "ts",
+      "role": "HIT-to-HURT node collision checks, directional blocking, damage scaling, hitstop, knockback, and FINISH HIM trigger.",
+      "code": "export const M05_CombatResolver = {\n  isBlocking(defender, attackerFacing, attackSpec) { /* grounded guard check */ },\n  applyImpact(attacker, defender, spec, hitX, hitY) { /* chip or combo-scaled damage + mesh impulse + hitstop */ },\n  resolve(attacker, defender) { /* HIT vs HURT circle overlap */ }\n};"
+    },
+    {
+      "id": "M06",
+      "name": "M06_AutonomousAI",
+      "filename": "m06AutonomousAI.ts",
+      "extension": "ts",
+      "role": "Autonomous fighter AI, round clock progression, finisher window countdown, and round reset/difficulty adaptation.",
+      "code": "export const M06_AutonomousAI = {\n  stepFighterAI(f, opp, slot) { /* spacing, projectiles, anti-air uppercut, sweep, throw, block */ },\n  tickRoundAndFinisher(p1, p2, dt) { /* clock, FINISH_HIM timer, autoAdaptDifficulty, round reset */ }\n};"
+    },
+    {
+      "id": "M07",
+      "name": "M07_AudioFx",
+      "filename": "m07AudioFx.ts",
+      "extension": "ts",
+      "role": "Web Audio procedural synthesizer for hits, blocks, and finishers.",
+      "code": "export const M07_AudioFx = {\n  ctx: null,\n  tone(freqStart, freqEnd, type, dur, vol) { /* exponential pitch envelope oscillator */ },\n  playHit(heavy) { this.tone(heavy ? 155 : 225, 42, heavy ? 'sawtooth' : 'triangle', 0.12, 0.11); },\n  playBlock() { this.tone(520, 310, 'square', 0.07, 0.06); },\n  playFinisher() { this.tone(110, 36, 'sawtooth', 0.35, 0.15); }\n};"
+    },
+    {
+      "id": "M08",
+      "name": "M08_Watchdog",
+      "filename": "m08Watchdog.ts",
+      "extension": "ts",
+      "role": "Self-healing fault detector, spring stiffness/damping bounds guard, healLog recorder, snapshot recovery, and JSON exporter.",
+      "code": "export const M08_Watchdog = {\n  snapshots: [],\n  recordHeal(reason) { /* appends to healLog & increments healsPerformed */ },\n  enforceCabinetDipRules() { /* clamps difficulty, clears slamTilt, bounds k & d */ },\n  captureSnapshot(state) { /* saves state every snapshotIntervalTicks */ },\n  restoreSnapshot(state) { /* restores last valid snapshot on NaN/exception */ },\n  sanitizeFighter(f, fallbackX, fallbackFacing) { /* repairs NaN, out-of-bounds, stuck stateFrames */ },\n  exportStudioPayload(state) { /* serializes studio JSON payload */ }\n};"
+    },
+    {
+      "id": "M09",
+      "name": "M09_Scheduler",
+      "filename": "m09Scheduler.ts",
+      "extension": "ts",
+      "role": "Fixed-timestep accumulator, 6-phase tick pipeline (PRE_STEP, INPUT_AND_AI, KINEMATICS, CONSTRAINT_SOLVE, COMBAT_AND_FX, POST_STEP), and exception recovery loop.",
+      "code": "export const M09_Scheduler = {\n  accumulator: 0, lastTime: 0, fpsFrames: 0, fpsClock: 0, rafId: 0, running: false,\n  applyFighterControls(f, slot, autoEnabled) { /* AI or manual stick + buffered move dispatch */ },\n  fixedTick(state) { /* PRE_STEP -> INPUT_AND_AI -> KINEMATICS -> CONSTRAINT_SOLVE -> COMBAT_AND_FX -> POST_STEP */ },\n  start(state, onTick) { /* fixed 1/60s loop + try/catch snapshot recovery */ },\n  stop() { /* cancels rAF cleanly */ }\n};"
+    },
+    {
+      "id": "M10",
+      "name": "M10_Renderer",
+      "filename": "m10Renderer.ts",
+      "extension": "ts",
+      "role": "Stage pattern synthesis, fighter 2D mesh & HIT/HURT node rendering, HUD, inside-canvas diagnostic panel, and canvas bootstrap.",
+      "code": "export const M10_Renderer = {\n  canvas: null, ctx: null, sparks: [], patternCanvas: null, cachedPatternKey: '', cachedPattern: null,\n  attachCanvas(canvas) { /* binds target 2D canvas context */ },\n  getStagePattern(stage, infusionLevel) { /* caches procedural floor grid pattern */ },\n  spawnSpark(x, y, color) { /* emits impact sparks */ },\n  drawFighter(f) { /* renders spine & HIT/HURT/LIMB mesh overlay */ },\n  drawHud(p1, p2) { /* HP bars, round clock, FINISH HIM callout, combo & score */ },\n  drawDiagnostics(state) { /* inside-canvas DIAG OVERLAY box */ },\n  render(state) { /* full frame render with screen shake & hazard pulse */ },\n  boot(canvas, onTick) { /* initializes fighters, input bus & scheduler */ }\n};"
+    },
+    {
+      "id": "M11",
+      "name": "M11_ManifestInspector",
+      "filename": "m11ManifestInspector.ts",
+      "extension": "ts",
+      "role": "Runtime contractSchema invariant validator, deterministic telemetry timeline sampler, and Golden Master manifest bundle exporter.",
+      "code": "export const M11_ManifestInspector = {\n  timeline: [],\n  lastHealth: { valid: true, checkedAtTick: 0, violations: [], moduleCount: 11, activePreset: 'CUSTOM' },\n  validateContracts(config, state, manifest) {\n    const violations = [];\n    if (config.cabinetDip.difficulty < 1 || config.cabinetDip.difficulty > 5) violations.push('cabinetDip.difficulty out of bounds (1..5)');\n    if (!Number.isFinite(config.infusion.meshSpringStiffness) || config.infusion.meshSpringStiffness < 20) violations.push('infusion.meshSpringStiffness invalid');\n    if (!Number.isFinite(config.infusion.meshSpringDamping) || config.infusion.meshSpringDamping < 0) violations.push('infusion.meshSpringDamping invalid');\n    for (const slot of ['p1', 'p2']) {\n      const f = state[slot];\n      if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) violations.push(`${slot} coordinates non-finite`);\n      if (!Number.isFinite(f.hp) || f.hp < 0 || f.hp > 100) violations.push(`${slot}.hp out of bounds (0..100)`);\n    }\n    this.lastHealth = { valid: violations.length === 0, checkedAtTick: config.telemetry.tickCount, violations, moduleCount: manifest ? manifest.modules.length : 11, activePreset: config.infusion.springPreset };\n    return this.lastHealth;\n  },\n  recordTelemetryFrame(config, state) { /* samples deterministic timeline every 15 ticks */ },\n  getTimeline() { return this.timeline; },\n  clearTimeline() { this.timeline = []; },\n  buildGoldenMasterExport(config, state, manifest) { /* bundles manifest + live config + fighters + timeline */ }\n};"
+    }
+  ]
+}

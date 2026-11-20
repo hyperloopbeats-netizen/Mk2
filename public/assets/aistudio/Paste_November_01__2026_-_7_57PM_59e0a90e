@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mortal Kombat 3: Dimension-X Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #050507;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            color: #f3f4f6;
+        }
+
+        /* Glassmorphism panel highlights */
+        .glass-panel {
+            background: rgba(15, 17, 23, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-panel-gold {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Scanline CRT overlay effect */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.35) 50%
+            );
+            background-size: 100% 4px;
+        }
+
+        /* Neon Glow Utility Effects */
+        .glow-amber {
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+        .glow-blue {
+            text-shadow: 0 0 10px rgba(14, 165, 233, 0.8), 0 0 20px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Mobile touch button press response */
+        .touch-btn:active {
+            transform: scale(0.92);
+            filter: brightness(1.3);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center p-0 m-0 select-none">
+
+    <!-- GAME CANVAS LAYER -->
+    <div id="app-container" class="relative w-full h-full max-w-[1400px] max-h-[800px] aspect-[16/9] bg-black shadow-2xl overflow-hidden border border-zinc-800 rounded-none sm:rounded-xl">
+        <canvas id="gameCanvas" class="w-full h-full block bg-zinc-950"></canvas>
+        <div class="scanlines absolute inset-0 pointer-events-none z-10"></div>
+
+        <!-- 94% VIEWPORT UI OVERLAY CONTAINER -->
+        <div id="ui-layer" class="absolute inset-[3%] z-20 flex flex-col justify-between pointer-events-none">
+            
+            <!-- HEADER BAR (HUD & Select Status) -->
+            <div id="hud-header" class="w-full flex justify-between items-center glass-panel px-4 py-2 rounded-lg pointer-events-auto">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs font-bold text-amber-500 tracking-wider">MK: DIMENSION-X</span>
+                    <span id="engine-status" class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40">ENGINE: SCORPIO ACTIVE</span>
+                </div>
+                <div class="flex items-center space-x-6 text-xs">
+                    <div class="text-zinc-400">FPS: <span id="fps-counter" class="text-green-400 font-mono">60</span></div>
+                    <div class="text-zinc-400">STAGE: <span id="stage-name" class="text-sky-400">NETHERREALM LAIR</span></div>
+                </div>
+            </div>
+
+            <!-- MENU CONTAINER: CHARACTER SELECT GRID (94% Viewport Center) -->
+            <div id="character-select-menu" class="w-full h-[76%] flex flex-col justify-between pointer-events-auto py-2">
+                
+                <!-- SELECT TITLE & SPOTLIGHT PREVIEW HEADER -->
+                <div class="w-full flex justify-between items-center px-4">
+                    <!-- P1 SPOTLIGHT INFO -->
+                    <div id="p1-spotlight" class="flex items-center space-x-4 w-1/3">
+                        <div class="w-16 h-16 glass-panel-gold rounded-lg flex items-center justify-center overflow-hidden border-2 border-amber-500">
+                            <span id="p1-portrait-icon" class="text-2xl font-black text-amber-400">🦂</span>
+                        </div>
+                        <div>
+                            <div class="text-xs text-amber-400 font-bold">PLAYER 1</div>
+                            <div id="p1-name" class="text-lg font-black text-white tracking-wide glow-amber">SCORPIO</div>
+                            <div class="text-[10px] text-zinc-400">SHIRAI RYU NINJA</div>
+                        </div>
+                    </div>
+
+                    <!-- CENTER VS LOGO -->
+                    <div class="text-center">
+                        <h1 class="text-xl sm:text-2xl font-black text-amber-500 tracking-widest glow-amber">SELECT YOUR FIGHTER</h1>
+                        <p class="text-[10px] text-zinc-500 tracking-widest mt-0.5">CHOOSE YOUR DESTINY</p>
+                    </div>
+
+                    <!-- P2 SPOTLIGHT INFO -->
+                    <div id="p2-spotlight" class="flex items-center justify-end space-x-4 w-1/3 text-right">
+                        <div>
+                            <div class="text-xs text-sky-400 font-bold">PLAYER 2 (CPU)</div>
+                            <div id="p2-name" class="text-lg font-black text-white tracking-wide glow-blue">SUB-ZERO</div>
+                            <div class="text-[10px] text-zinc-400">LIN KUEI ICE MASTER</div>
+                        </div>
+                        <div class="w-16 h-16 glass-panel rounded-lg flex items-center justify-center overflow-hidden border-2 border-sky-500">
+                            <span id="p2-portrait-icon" class="text-2xl font-black text-sky-400">❄️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4x4 ROSTER GRID MATRIX -->
+                <div class="w-full flex-1 my-2 flex items-center justify-center">
+                    <div id="roster-grid" class="grid grid-cols-4 gap-2 sm:gap-3 w-full max-w-4xl h-full p-2 glass-panel rounded-xl">
+                        <!-- Dynamic Character Grid Tiles Inject Here -->
+                    </div>
+                </div>
+
+                <!-- SELECT CONTROL FOOTER GUIDES -->
+                <div class="w-full glass-panel px-4 py-1.5 rounded-lg flex justify-between items-center text-[11px] text-zinc-400">
+                    <div class="flex space-x-4">
+                        <span><b class="text-amber-400">DPAD / WASD:</b> NAVIGATE GRID</span>
+                        <span><b class="text-amber-400">ENTER / LP:</b> SELECT</span>
+                    </div>
+                    <div class="text-amber-500 font-bold animate-pulse">PRESS START TO ENTER COMBAT</div>
+                </div>
+            </div>
+
+            <!-- COMBAT HUD (Hidden during Menu State) -->
+            <div id="combat-hud" class="w-full h-full flex flex-col justify-between hidden pointer-events-none">
+                <!-- HEALTH BARS & METERS -->
+                <div class="w-full flex justify-between items-start pt-2 px-2 gap-4">
+                    <!-- P1 HEALTH BAR -->
+                    <div class="w-1/2 flex flex-col space-y-1">
+                        <div class="flex justify-between items-center text-xs font-bold">
+                            <span class="text-amber-400 glow-amber" id="hud-p1-name">SCORPIO</span>
+                            <span class="text-xs text-zinc-400" id="hud-p1-hp-text">250 / 250</span>
+                        </div>
+                        <div class="w-full h-5 bg-zinc-900 border border-zinc-700 rounded-sm overflow-hidden p-0.5 relative">
+                            <div id="hud-p1-hp-fill" class="h-full bg-gradient-to-r from-amber-600 to-yellow-400 w-full transition-all duration-75"></div>
+                        </div>
+                        <!-- MANA & WEAPON METER -->
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2/3 h-2 bg-zinc-900 border border-zinc-700 rounded-sm overflow-hidden">
+                                <div id="hud-p1-mana-fill" class="h-full bg-blue-500 w-full"></div>
+                            </div>
+                            <span class="text-[9px] text-zinc-400">WPN: <b id="hud-p1-wpn" class="text-amber-400">4</b></span>
+                        </div>
+                    </div>
+
+                    <!-- VS TIMER BANNER -->
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 glass-panel rounded-full flex items-center justify-center border-2 border-amber-500">
+                            <span id="match-timer" class="text-xl font-black text-amber-400">99</span>
+                        </div>
+                    </div>
+
+                    <!-- P2 HEALTH BAR -->
+                    <div class="w-1/2 flex flex-col space-y-1 text-right">
+                        <div class="flex justify-between items-center text-xs font-bold flex-row-reverse">
+                            <span class="text-sky-400 glow-blue" id="hud-p2-name">SUB-ZERO</span>
+                            <span class="text-xs text-zinc-400" id="hud-p2-hp-text">250 / 250</span>
+                        </div>
+                        <div class="w-full h-5 bg-zinc-900 border border-zinc-700 rounded-sm overflow-hidden p-0.5 relative flex justify-end">
+                            <div id="hud-p2-hp-fill" class="h-full bg-gradient-to-l from-sky-600 to-cyan-400 w-full transition-all duration-75"></div>
+                        </div>
+                        <!-- MANA METER -->
+                        <div class="flex items-center justify-end space-x-2">
+                            <span class="text-[9px] text-zinc-400">WPN: <b id="hud-p2-wpn" class="text-sky-400">3</b></span>
+                            <div class="w-2/3 h-2 bg-zinc-900 border border-zinc-700 rounded-sm overflow-hidden">
+                                <div id="hud-p2-mana-fill" class="h-full bg-blue-500 w-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANNOUNCER ANNOUNCEMENT BANNER -->
+                <div id="announcer-banner" class="w-full text-center my-auto hidden">
+                    <h2 id="announcer-text" class="text-4xl sm:text-6xl font-black text-red-600 tracking-widest drop-shadow-[0_5px_5px_rgba(0,0,0,1)] uppercase animate-bounce">
+                        FATALITY
+                    </h2>
+                </div>
+            </div>
+
+            <!-- MOBILE DUAL THUMBSTICK & COMBAT CONTROLS (Always Interactive) -->
+            <div id="mobile-controls" class="w-full flex justify-between items-end pb-2 pointer-events-auto">
+                <!-- DPAD CONTROL (LEFT THUMB) -->
+                <div class="grid grid-cols-3 gap-1 w-36 h-36 p-1 glass-panel rounded-full">
+                    <div></div>
+                    <button id="btn-up" class="touch-btn bg-zinc-800/80 hover:bg-amber-600 rounded-t-lg flex items-center justify-center text-zinc-200 font-black">▲</button>
+                    <div></div>
+                    <button id="btn-left" class="touch-btn bg-zinc-800/80 hover:bg-amber-600 rounded-l-lg flex items-center justify-center text-zinc-200 font-black">◄</button>
+                    <button id="btn-center" class="bg-zinc-900 rounded-full border border-zinc-700 flex items-center justify-center text-[9px] text-zinc-500 font-mono">DPAD</button>
+                    <button id="btn-right" class="touch-btn bg-zinc-800/80 hover:bg-amber-600 rounded-r-lg flex items-center justify-center text-zinc-200 font-black">►</button>
+                    <div></div>
+                    <button id="btn-down" class="touch-btn bg-zinc-800/80 hover:bg-amber-600 rounded-b-lg flex items-center justify-center text-zinc-200 font-black">▼</button>
+                    <div></div>
+                </div>
+
+                <!-- COMBAT BUTTON GRID (RIGHT THUMB) -->
+                <div class="grid grid-cols-3 gap-2 w-48 h-36 p-2 glass-panel rounded-2xl">
+                    <button id="btn-hp" class="touch-btn bg-red-900/80 border border-red-500 rounded-lg text-xs font-black text-red-200 shadow-md">HP</button>
+                    <button id="btn-hk" class="touch-btn bg-amber-900/80 border border-amber-500 rounded-lg text-xs font-black text-amber-200 shadow-md">HK</button>
+                    <button id="btn-wpn" class="touch-btn bg-yellow-600/80 border border-yellow-300 rounded-lg text-xs font-black text-white shadow-md">WPN</button>
+                    <button id="btn-lp" class="touch-btn bg-red-950/80 border border-red-700 rounded-lg text-xs font-black text-red-300 shadow-md">LP</button>
+                    <button id="btn-lk" class="touch-btn bg-amber-950/80 border border-amber-700 rounded-lg text-xs font-black text-amber-300 shadow-md">LK</button>
+                    <button id="btn-blk" class="touch-btn bg-blue-900/80 border border-blue-500 rounded-lg text-xs font-black text-blue-200 shadow-md">BLK</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIZER & ENGINE LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. WEB AUDIO API SYNTHESIZER (NO EXTERNAL AUDIO FILES)
+           ========================================================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playHit(freq = 120, type = 'square', duration = 0.15) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + duration);
+                
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playSpearSFX() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.2);
+                
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playFlameSFX() {
+                if (!this.ctx) return;
+                // Noise buffer creation for fire breath synth
+                const bufferSize = this.ctx.sampleRate * 0.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                filter.Q.setValueAtTime(3, this.ctx.currentTime);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start();
+                noise.stop(this.ctx.currentTime + 0.5);
+            }
+
+            playMenuTick() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.05);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+        }
+
+        const audio = new SoundEngine();
+
+        /* ==========================================================================
+           2. ROSTER DATA & MENU GRID CONFIGURATION
+           ========================================================================== */
+        const ROSTER = [
+            { id: 'SCORPIO', name: 'SCORPIO', icon: '🦂', color: '#f59e0b', bio: 'Shirai Ryu Specter' },
+            { id: 'SUB_ZERO', name: 'SUB-ZERO', icon: '❄️', color: '#0ea5e9', bio: 'Lin Kuei Cryomancer' },
+            { id: 'LIU_KANG', name: 'LIU KANG', icon: '🐉', color: '#dc2626', bio: 'Shaolin Champion' },
+            { id: 'SMOKE', name: 'SMOKE', icon: '💨', color: '#64748b', bio: 'Cyber Enforcer' },
+            { id: 'RAIDEN', name: 'RAIDEN', icon: '⚡', color: '#38bdf8', bio: 'God of Thunder' },
+            { id: 'REPTILE', name: 'REPTILE', icon: '🦎', color: '#16a34a', bio: 'Zaterran Assassin' },
+            { id: 'KUNG_LAO', name: 'KUNG LAO', icon: '👒', color: '#475569', bio: 'Shaolin Monk' },
+            { id: 'KITANA', name: 'KITANA', icon: '🪭', color: '#2563eb', bio: 'Edenian Princess' },
+            { id: 'AIMIX', name: 'AIMIX', icon: '👑', color: '#f97316', bio: 'Soundwave Sovereign' },
+            { id: 'SONYA', name: 'SONYA', icon: '🎖️', color: '#15803d', bio: 'Special Forces General' },
+            { id: 'CAGE', name: 'JOHNNY CAGE', icon: '🕶️', color: '#0ea5e9', bio: 'Action Superstar' },
+            { id: 'GORO', name: 'GORO', icon: '🥊', color: '#ea580c', bio: 'Shokan Prince' },
+            { id: 'ROBOCOP', name: 'ROBOCOP', icon: '🤖', color: '#94a3b8', bio: 'Cybernetic Officer' },
+            { id: 'LEONARDO', name: 'LEONARDO', icon: '🐢', color: '#0284c7', bio: 'Leader of the Turtles' },
+            { id: 'RANDOM', name: 'RANDOM', icon: '❓', color: '#a1a1aa', bio: 'Select Mystery Fighter' },
+            { id: 'LOCKED', name: 'LOCKED', icon: '🔒', color: '#3f3f46', bio: 'Unknown Combatant' }
+        ];
+
+        /* ==========================================================================
+           3. 6-PART MODULAR BODY RENDERER & 12-LEVEL PARAMETRIC MOVEMENT BOX
+           ========================================================================== */
+        class SingleMovementBox {
+            constructor(owner) {
+                this.owner = owner;
+                this.levelY = 8; // Default level 8 (Neutral Standing)
+                this.microStep = 0; // 0: Frame A, 1: Frame B, 2: Frame C
+                
+                // Rotations (degrees) and translation offsets for the 6 modular parts
+                this.pose = {
+                    head:  { rot: 0, ox: 0, oy: -75 },
+                    torso: { rot: 0, ox: 0, oy: -45 },
+                    lArm:  { rot: 15, ox: -12, oy: -55 },
+                    rArm:  { rot: -20, ox: 12, oy: -55 },
+                    lLeg:  { rot: 10, ox: -8, oy: -20 },
+                    rLeg:  { rot: -10, ox: 8, oy: -20 }
+                };
+            }
+
+            // Hermite Bezier micro-interpolation calculation
+            interpolatePose(targetLevel, targetPose, t) {
+                // Ease factor
+                const ease = t * t * (3 - 2 * t);
+                
+                // Vertical Level Interpolation (Level 12 = Ground, Level 1 = Apex airborne)
+                const currentY = this.owner.yBase - (this.levelY * 7);
+                const targetY  = this.owner.yBase - (targetLevel * 7);
+                this.owner.y = currentY + (targetY - currentY) * ease;
+
+                // Micro-Frame body part interpolation
+                for (let part in this.pose) {
+                    if (targetPose[part]) {
+                        this.pose[part].rot += (targetPose[part].rot - this.pose[part].rot) * ease;
+                        this.pose[part].ox  += (targetPose[part].ox  - this.pose[part].ox)  * ease;
+                        this.pose[part].oy  += (targetPose[part].oy  - this.pose[part].oy)  * ease;
+                    }
+                }
+            }
+
+            render(ctx) {
+                ctx.save();
+                ctx.translate(this.owner.x, this.owner.y);
+                if (this.owner.facing === -1) {
+                    ctx.scale(-1, 1);
+                }
+
+                const primaryColor = this.owner.color || '#f59e0b';
+
+                // Render 6 Sliced Body Parts in Layer Order: R_ARM -> R_LEG -> TORSO -> HEAD -> L_LEG -> L_ARM
+                
+                // 1. REAR ARM
+                ctx.save();
+                ctx.translate(this.pose.rArm.ox, this.pose.rArm.oy);
+                ctx.rotate((this.pose.rArm.rot * Math.PI) / 180);
+                ctx.fillStyle = '#71717a';
+                ctx.fillRect(-4, 0, 8, 26); // Bicep/Forearm slice
+                ctx.fillStyle = primaryColor;
+                ctx.fillRect(-5, 14, 10, 8); // Gauntlet
+                ctx.restore();
+
+                // 2. REAR LEG
+                ctx.save();
+                ctx.translate(this.pose.rLeg.ox, this.pose.rLeg.oy);
+                ctx.rotate((this.pose.rLeg.rot * Math.PI) / 180);
+                ctx.fillStyle = '#27272a';
+                ctx.fillRect(-6, 0, 11, 34); // Shin/Thigh slice
+                ctx.fillStyle = primaryColor;
+                ctx.fillRect(-6, 26, 12, 8); // Boot
+                ctx.restore();
+
+                // 3. TORSO
+                ctx.save();
+                ctx.translate(this.pose.torso.ox, this.pose.torso.oy);
+                ctx.rotate((this.pose.torso.rot * Math.PI) / 180);
+                ctx.fillStyle = '#18181b';
+                ctx.fillRect(-14, -15, 28, 35); // Gi Body
+                ctx.fillStyle = primaryColor;
+                ctx.fillRect(-10, -15, 20, 35); // Yellow Ninja Vest Strap
+                ctx.restore();
+
+                // 4. HEAD
+                ctx.save();
+                ctx.translate(this.pose.head.ox, this.pose.head.oy);
+                ctx.rotate((this.pose.head.rot * Math.PI) / 180);
+                // Skull or Ninja Mask
+                ctx.fillStyle = this.owner.isSkullHead ? '#fef08a' : primaryColor;
+                ctx.beginPath();
+                ctx.arc(0, -5, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#09090b';
+                ctx.fillRect(-8, -8, 16, 6); // Visor/Mask gap
+                ctx.restore();
+
+                // 5. LEAD LEG
+                ctx.save();
+                ctx.translate(this.pose.lLeg.ox, this.pose.lLeg.oy);
+                ctx.rotate((this.pose.lLeg.rot * Math.PI) / 180);
+                ctx.fillStyle = '#3f3f46';
+                ctx.fillRect(-6, 0, 12, 34);
+                ctx.fillStyle = primaryColor;
+                ctx.fillRect(-7, 26, 13, 8);
+                ctx.restore();
+
+                // 6. LEAD ARM (WITH WEAPON / SPEAR RENDER)
+                ctx.save();
+                ctx.translate(this.pose.lArm.ox, this.pose.lArm.oy);
+                ctx.rotate((this.pose.lArm.rot * Math.PI) / 180);
+                ctx.fillStyle = '#a1a1aa';
+                ctx.fillRect(-4, 0, 8, 26);
+                ctx.fillStyle = primaryColor;
+                ctx.fillRect(-5, 14, 10, 8); // Lead Gauntlet
+
+                // Render Harpoon Spear if active
+                if (this.owner.isSpearActive) {
+                    ctx.strokeStyle = '#d4d4d8';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 20);
+                    ctx.lineTo(this.owner.spearReach, 20);
+                    ctx.stroke();
+
+                    // Spear Tip
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.moveTo(this.owner.spearReach, 15);
+                    ctx.lineTo(this.owner.spearReach + 15, 20);
+                    ctx.lineTo(this.owner.spearReach, 25);
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                ctx.restore();
+            }
+        }
+
+        /* ==========================================================================
+           4. EXPANDED SCORPIO (SCORPION) CHARACTER CLASS
+           ========================================================================== */
+        class Character {
+            constructor(id, name, color, x, facing) {
+                this.id = id;
+                this.name = name;
+                this.color = color;
+                this.x = x;
+                this.yBase = 420;
+                this.y = this.yBase;
+                this.vx = 0;
+                this.vy = 0;
+                this.facing = facing; // 1: Right, -1: Left
+
+                // Resources
+                this.health = 250;
+                this.maxHealth = 250;
+                this.mana = 100;
+                this.runMeter = 100;
+                this.weaponCharges = 4;
+
+                // State Machine
+                this.state = 'IDLE'; // IDLE, WALK, CROUCH, JUMP, SPEAR, TELEPORT, HIT, FATALITY
+                this.stateTimer = 0;
+                this.isSkullHead = false;
+                this.isSpearActive = false;
+                this.spearReach = 0;
+
+                // Single Movement Box Engine
+                this.animBox = new SingleMovementBox(this);
+
+                // Blood Particles Array
+                this.bloodStains = [];
+            }
+
+            update(opponent) {
+                this.stateTimer++;
+
+                // Track opponent facing directional vector if not executing locked moves
+                if (!['SPEAR', 'TELEPORT', 'FATALITY'].includes(this.state)) {
+                    this.facing = this.x < opponent.x ? 1 : -1;
+                }
+
+                // Physics movement update
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Stage Boundaries
+                if (this.x < 60) this.x = 60;
+                if (this.x > 1140) this.x = 1140;
+
+                // Handle State Animations & Movement Box interpolations
+                switch (this.state) {
+                    case 'IDLE':
+                        this.vx = 0;
+                        const idleLevel = 8 + Math.sin(this.stateTimer * 0.1) * 0.3;
+                        this.animBox.interpolatePose(idleLevel, {
+                            head:  { rot: 0, ox: 0, oy: -75 },
+                            torso: { rot: 0, ox: 0, oy: -45 },
+                            lArm:  { rot: 20 + Math.sin(this.stateTimer * 0.1) * 5, ox: -12, oy: -55 },
+                            rArm:  { rot: -20, ox: 12, oy: -55 }
+                        }, 0.2);
+                        break;
+
+                    case 'WALK':
+                        const walkCycle = Math.sin(this.stateTimer * 0.2);
+                        this.animBox.interpolatePose(8, {
+                            lLeg: { rot: walkCycle * 30, ox: -8, oy: -20 },
+                            rLeg: { rot: -walkCycle * 30, ox: 8, oy: -20 }
+                        }, 0.3);
+                        break;
+
+                    case 'CROUCH':
+                        this.vx = 0;
+                        this.animBox.interpolatePose(11, {
+                            head:  { rot: 15, ox: 0, oy: -55 },
+                            torso: { rot: 25, ox: 0, oy: -35 },
+                            lLeg:  { rot: 60, ox: -10, oy: -15 },
+                            rLeg:  { rot: 60, ox: 10, oy: -15 }
+                        }, 0.4);
+                        break;
+
+                    case 'SPEAR':
+                        this.vx = 0;
+                        this.isSpearActive = true;
+                        if (this.spearReach < 300) this.spearReach += 25;
+                        this.animBox.interpolatePose(8, {
+                            lArm: { rot: 90, ox: -5, oy: -55 },
+                            torso: { rot: -10, ox: 0, oy: -45 }
+                        }, 0.5);
+
+                        // Hit Check for Spear
+                        const spearTipX = this.x + (this.facing * (this.spearReach + 20));
+                        if (Math.abs(spearTipX - opponent.x) < 40 && opponent.state !== 'HIT') {
+                            opponent.takeDamage(20);
+                            opponent.state = 'HIT';
+                            audio.playHit(200, 'sawtooth');
+                        }
+
+                        if (this.stateTimer > 40) {
+                            this.isSpearActive = false;
+                            this.spearReach = 0;
+                            this.state = 'IDLE';
+                        }
+                        break;
+
+                    case 'TELEPORT':
+                        if (this.stateTimer === 1) {
+                            audio.playFlameSFX();
+                        }
+                        if (this.stateTimer === 15) {
+                            // Phase behind opponent
+                            this.x = opponent.x - (this.facing * 90);
+                            this.facing *= -1;
+                        }
+                        // Flying horizontal kick interpolation (Level 4 Parametric lock)
+                        this.animBox.interpolatePose(4, {
+                            torso: { rot: 80, ox: 0, oy: -45 },
+                            lLeg:  { rot: 0, ox: 0, oy: -20 },
+                            rLeg:  { rot: 45, ox: 0, oy: -20 }
+                        }, 0.5);
+
+                        if (this.stateTimer > 30) {
+                            this.state = 'IDLE';
+                        }
+                        break;
+
+                    case 'FATALITY':
+                        // Toasty Fire Breath Fatality Timeline
+                        if (this.stateTimer === 10) {
+                            this.isSkullHead = true; // Unmask revealing burning skull
+                            audio.playFlameSFX();
+                        }
+                        if (this.stateTimer > 20 && this.stateTimer < 80) {
+                            // Emit flame particles toward opponent
+                            spawnBloodOrFlame(opponent.x, opponent.y - 40, '#f97316', 8);
+                            opponent.health = Math.max(0, opponent.health - 2);
+                        }
+                        if (this.stateTimer === 85) {
+                            opponent.state = 'HIT';
+                            audio.playHit(80, 'square', 0.5);
+                        }
+                        break;
+
+                    case 'HIT':
+                        this.animBox.interpolatePose(9, {
+                            head:  { rot: -30, ox: 0, oy: -70 },
+                            torso: { rot: -20, ox: 0, oy: -40 }
+                        }, 0.5);
+                        if (this.stateTimer > 15) this.state = 'IDLE';
+                        break;
+                }
+            }
+
+            takeDamage(amount) {
+                this.health = Math.max(0, this.health - amount);
+                spawnBloodOrFlame(this.x, this.y - 50, '#dc2626', 15);
+            }
+
+            // Hitbox verification geometry
+            getHitbox() {
+                return {
+                    x: this.x + (this.facing * 20),
+                    y: this.y - 70,
+                    w: 45,
+                    h: 50
+                };
+            }
+        }
+
+        /* ==========================================================================
+           5. BLOOD & FLAME PARTICLE SYSTEM
+           ========================================================================== */
+        const particles = [];
+        function spawnBloodOrFlame(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.8) * 6,
+                    color: color,
+                    size: Math.random() * 4 + 2,
+                    life: 40
+                });
+            }
+        }
+
+        function updateAndRenderParticles(ctx) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // Gravity
+                p.life--;
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        /* ==========================================================================
+           6. ENGINE STATE, MENU & COMBAT CONTROLLER
+           ========================================================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Canvas Internal Resolution Set (16:9 1200x675)
+        canvas.width = 1200;
+        canvas.height = 675;
+
+        let gameState = 'MENU'; // MENU, VS_TRANSITION, COMBAT
+        let p1Cursor = 0;
+        let p2Cursor = 1;
+        let selectedP1 = ROBO_DATA = ROSTER[0];
+        let selectedP2 = ROSTER[1];
+
+        let p1 = new Character('SCORPIO', 'SCORPIO', '#f59e0b', 300, 1);
+        let p2 = new Character('SUB_ZERO', 'SUB-ZERO', '#0ea5e9', 900, -1);
+
+        // Build HTML Character Select Grid
+        const rosterGridEl = document.getElementById('roster-grid');
+        ROSTER.forEach((char, index) => {
+            const tile = document.createElement('div');
+            tile.id = `grid-tile-${index}`;
+            tile.className = `glass-panel rounded-lg flex flex-col items-center justify-center p-1.5 cursor-pointer border-2 transition-all duration-150 ${index === 0 ? 'border-amber-500 glass-panel-gold' : 'border-transparent'}`;
+            tile.innerHTML = `
+                <span class="text-xl sm:text-2xl">${char.icon}</span>
+                <span class="text-[9px] font-bold tracking-tighter mt-1 text-zinc-300">${char.name}</span>
+            `;
+            tile.onclick = () => selectCharacter(index);
+            rosterGridEl.appendChild(tile);
+        });
+
+        function updateGridSelection() {
+            ROSTER.forEach((_, idx) => {
+                const el = document.getElementById(`grid-tile-${idx}`);
+                if (el) {
+                    if (idx === p1Cursor) {
+                        el.className = 'glass-panel glass-panel-gold rounded-lg flex flex-col items-center justify-center p-1.5 border-2 border-amber-500 scale-105 z-10 shadow-lg';
+                    } else {
+                        el.className = 'glass-panel rounded-lg flex flex-col items-center justify-center p-1.5 border-2 border-transparent opacity-80';
+                    }
+                }
+            });
+
+            // Update Spotlight
+            selectedP1 = ROSTER[p1Cursor];
+            document.getElementById('p1-name').innerText = selectedP1.name;
+            document.getElementById('p1-portrait-icon').innerText = selectedP1.icon;
+            audio.playMenuTick();
+        }
+
+        function selectCharacter(index) {
+            audio.init();
+            p1Cursor = index;
+            updateGridSelection();
+            startMatchTransition();
+        }
+
+        function startMatchTransition() {
+            gameState = 'VS_TRANSITION';
+            audio.playHit(300, 'sine', 0.4);
+
+            // Hide Menu Layer & Show HUD after 1.2s delay
+            setTimeout(() => {
+                document.getElementById('character-select-menu').classList.add('hidden');
+                document.getElementById('combat-hud').classList.remove('hidden');
+                gameState = 'COMBAT';
+            }, 1200);
+        }
+
+        /* ==========================================================================
+           7. INPUT POLLING & KEYBOARD / TOUCH LISTENERS
+           ========================================================================== */
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            audio.init();
+            keys[e.code] = true;
+
+            if (gameState === 'MENU') {
+                if (e.code === 'KeyD' || e.code === 'ArrowRight') { p1Cursor = (p1Cursor + 1) % ROSTER.length; updateGridSelection(); }
+                if (e.code === 'KeyA' || e.code === 'ArrowLeft') { p1Cursor = (p1Cursor - 1 + ROSTER.length) % ROSTER.length; updateGridSelection(); }
+                if (e.code === 'Enter' || e.code === 'Space') { startMatchTransition(); }
+            } else if (gameState === 'COMBAT') {
+                // Special Move Triggers for Scorpio
+                if (e.code === 'KeyF') { p1.state = 'SPEAR'; p1.stateTimer = 0; audio.playSpearSFX(); }
+                if (e.code === 'KeyT') { p1.state = 'TELEPORT'; p1.stateTimer = 0; }
+                if (e.code === 'KeyK') { p1.state = 'FATALITY'; p1.stateTimer = 0; triggerAnnouncer('FATALITY'); }
+            }
+        });
+
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+        // Touch Button Mapping Binding
+        const bindBtn = (id, onPress) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); audio.init(); onPress(); });
+                btn.addEventListener('click', () => { audio.init(); onPress(); });
+            }
+        };
+
+        bindBtn('btn-left', () => { if (gameState === 'COMBAT') { p1.vx = -4; p1.state = 'WALK'; } });
+        bindBtn('btn-right', () => { if (gameState === 'COMBAT') { p1.vx = 4; p1.state = 'WALK'; } });
+        bindBtn('btn-down', () => { if (gameState === 'COMBAT') { p1.state = 'CROUCH'; } });
+        bindBtn('btn-hp', () => { if (gameState === 'COMBAT') { p1.state = 'SPEAR'; p1.stateTimer = 0; audio.playSpearSFX(); } });
+        bindBtn('btn-hk', () => { if (gameState === 'COMBAT') { p1.state = 'TELEPORT'; p1.stateTimer = 0; } });
+        bindBtn('btn-wpn', () => { if (gameState === 'COMBAT') { p1.state = 'FATALITY'; p1.stateTimer = 0; triggerAnnouncer('TOASTY!'); } });
+
+        function triggerAnnouncer(text) {
+            const banner = document.getElementById('announcer-banner');
+            const txt = document.getElementById('announcer-text');
+            txt.innerText = text;
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 2500);
+        }
+
+        /* ==========================================================================
+           8. MAIN GAME LOOP (60 FPS RENDERER)
+           ========================================================================== */
+        function gameLoop() {
+            // Clear Stage Canvas
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Stage Arena Backdrop (Netherrealm Lair)
+            ctx.fillStyle = '#18181b';
+            ctx.fillRect(0, 480, canvas.width, 195); // Floor Ground
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 480);
+            ctx.lineTo(canvas.width, 480);
+            ctx.stroke();
+
+            if (gameState === 'COMBAT' || gameState === 'VS_TRANSITION') {
+                // Update Character States & Physics
+                p1.update(p2);
+                p2.update(p1);
+
+                // Render Characters via 6-Part Modular Engine
+                p1.animBox.render(ctx);
+                p2.animBox.render(ctx);
+
+                // Render Blood & Flame Particles
+                updateAndRenderParticles(ctx);
+
+                // Update HUD Elements
+                document.getElementById('hud-p1-hp-fill').style.width = `${(p1.health / p1.maxHealth) * 100}%`;
+                document.getElementById('hud-p2-hp-fill').style.width = `${(p2.health / p2.maxHealth) * 100}%`;
+                document.getElementById('hud-p1-hp-text').innerText = `${p1.health} / ${p1.maxHealth}`;
+                document.getElementById('hud-p2-hp-text').innerText = `${p2.health} / ${p2.maxHealth}`;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize Engine Loop
+        window.onload = () => {
+            updateGridSelection();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

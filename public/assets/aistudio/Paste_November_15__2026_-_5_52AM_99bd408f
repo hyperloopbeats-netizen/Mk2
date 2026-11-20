@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>AIM OS Desktop v1.0.0 — Ultimate Omni-Engine & Spatial Floor Plan Edition</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js for 3D Viewports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@600;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            orbitron: ['Orbitron', 'sans-serif'],
+            quicksand: ['Quicksand', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --glass-blur: 24px;
+      --glass-bg: rgba(15, 23, 42, 0.78);
+      --glass-bg-elevated: rgba(15, 23, 42, 0.90);
+      --glass-border: rgba(56, 189, 248, 0.28);
+      --glass-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
+      --text-primary: #f8fafc;
+      --text-secondary: rgba(248, 250, 252, 0.75);
+      --panel-inner: rgba(2, 6, 23, 0.55);
+    }
+
+    body.light-glass {
+      --glass-bg: rgba(255, 255, 255, 0.68);
+      --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(56, 189, 248, 0.45);
+      --glass-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+      --text-primary: #0f172a;
+      --text-secondary: rgba(15, 23, 42, 0.75);
+      --panel-inner: rgba(255, 255, 255, 0.55);
+    }
+
+    * { box-sizing: border-box; user-select: none; }
+    input, textarea, pre, code, .selectable { user-select: text; }
+
+    body {
+      margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh;
+      font-family: 'Inter', sans-serif; color: var(--text-primary); background-color: #020617;
+    }
+
+    /* Atmospheric Wallpapers */
+    .wallpaper-aurora {
+      background:
+        radial-gradient(at 15% 20%, rgba(56, 189, 248, 0.45) 0px, transparent 50%),
+        radial-gradient(at 85% 15%, rgba(168, 85, 247, 0.42) 0px, transparent 52%),
+        radial-gradient(at 75% 85%, rgba(244, 114, 182, 0.38) 0px, transparent 50%),
+        linear-gradient(135deg, #0b0f19 0%, #0f172a 50%, #020617 100%);
+      background-size: 140% 140%;
+      animation: meshShift 22s ease infinite alternate;
+    }
+    .wallpaper-glacier {
+      background:
+        radial-gradient(at 20% 25%, rgba(125, 211, 252, 0.65) 0px, transparent 55%),
+        radial-gradient(at 80% 20%, rgba(196, 181, 253, 0.58) 0px, transparent 55%),
+        linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background-size: 140% 140%;
+      animation: meshShift 26s ease infinite alternate;
+    }
+    @keyframes meshShift {
+      0% { background-position: 0% 20%; }
+      50% { background-position: 100% 60%; }
+      100% { background-position: 25% 100%; }
+    }
+
+    .glass-surface {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+    .glass-bar {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(28px) saturate(190%);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .glass-dock {
+      background: var(--glass-bg-elevated);
+      backdrop-filter: blur(32px) saturate(195%);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .glass-inner { background: var(--panel-inner); border: 1px solid rgba(255, 255, 255, 0.12); }
+
+    .window-frame { transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+    .window-frame.dragging, .window-frame.resizing { transition: none !important; }
+    .window-minimized { opacity: 0; transform: scale(0.86) translateY(60px); pointer-events: none; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
+
+    .dock-item { transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.22s ease; }
+    .dock-item:hover { transform: translateY(-10px) scale(1.22); margin-left: 6px; margin-right: 6px; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 10px #38bdf8; cursor: pointer;
+    }
+  </style>
+</head>
+<body class="wallpaper-aurora select-none">
+
+  <!-- Brightness & Sleep Overlays -->
+  <div id="brightness-overlay" class="fixed inset-0 bg-black pointer-events-none z-[9998] transition-opacity duration-150" style="opacity: 0;"></div>
+  <div id="sleep-screen" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center backdrop-blur-3xl bg-slate-950/80 text-white">
+    <div class="text-center space-y-4">
+      <div id="lock-time" class="text-7xl font-light font-mono">18:04</div>
+      <div id="lock-date" class="text-lg text-white/70">Sunday, November 15</div>
+      <button onclick="wakeSystem()" class="px-6 py-3 rounded-2xl glass-surface hover:bg-white/25 transition flex items-center gap-3 mx-auto text-sm font-medium">
+        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span> Click to Unlock AIM OS
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Status Bar -->
+  <header class="glass-bar fixed top-0 left-0 right-0 h-9 px-4 flex items-center justify-between z-[1000] text-xs font-medium">
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <button onclick="toggleMenu('system-menu')" class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/15 transition">
+          <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          <span class="font-semibold font-orbitron tracking-wider">AIM OS • ULTIMATE</span>
+        </button>
+        <div id="system-menu" class="hidden absolute left-0 mt-2 w-64 rounded-2xl glass-surface p-1.5 shadow-2xl z-[1100] text-xs space-y-0.5">
+          <button onclick="openApp('floorplan'); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 text-blue-300 font-semibold">📐 Conduit & Floor Plan</button>
+          <button onclick="openApp('crypto'); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 text-amber-300">📈 Crypto & Asset Terminal</button>
+          <button onclick="openApp('rfmon'); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 text-cyan-300">📡 RF & UHF Monitor</button>
+          <button onclick="openApp('player'); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15 text-pink-300">🎵 AiM Audio Deck</button>
+          <div class="my-1 border-t border-white/15"></div>
+          <button onclick="openApp('sysinfo'); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15">System Telemetry</button>
+          <button onclick="sleepSystem(); closeMenus()" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/15">Sleep Runtime</button>
+        </div>
+      </div>
+      <span class="opacity-30">|</span>
+      <span id="active-app-label" class="font-semibold truncate max-w-[220px]">Finder • Desktop Workspace</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="openApp('sysinfo')" class="hidden sm:flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition font-mono text-[11px]">
+        <span class="flex items-center gap-1 text-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> CPU <span id="top-cpu">14%</span></span>
+        <span class="opacity-30">•</span>
+        <span class="text-sky-300">RAM <span id="top-ram">4.2G</span></span>
+      </button>
+
+      <div class="relative">
+        <button onclick="toggleMenu('control-center')" class="px-2 py-1 rounded-lg hover:bg-white/15 transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+          <span class="hidden md:inline">Control</span>
+        </button>
+        <div id="control-center" class="hidden absolute right-0 mt-2 w-72 rounded-3xl glass-surface p-4 shadow-2xl z-[1100] space-y-3">
+          <div class="p-3 rounded-2xl glass-inner flex items-center justify-between">
+            <div><div class="text-xs font-semibold">Theme Mode</div><div class="text-[10px] opacity-70">Obsidian / Crystal</div></div>
+            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-white/20 text-xs font-medium">Switch</button>
+          </div>
+          <div class="p-3 rounded-2xl glass-inner space-y-1">
+            <div class="flex justify-between text-[11px]"><span>Brightness</span><span id="brightness-val" class="font-mono">100%</span></div>
+            <input type="range" min="35" max="100" value="100" oninput="setBrightness(this.value)" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <button id="top-clock" class="px-2 py-1 rounded-lg hover:bg-white/15 transition font-mono tabular-nums text-xs">Sun 18:04</button>
+    </div>
+  </header>
+
+  <!-- Main Desktop Area -->
+  <main id="desktop-area" class="relative w-full h-full pt-12 pb-24 px-4 overflow-hidden">
+    <!-- Desktop Shortcuts Grid -->
+    <div id="desktop-icons" class="grid grid-flow-col grid-rows-5 gap-3 w-fit">
+      <button ondblclick="openApp('floorplan')" class="desktop-icon group w-24 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg"><i data-lucide="layout" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Floor Plan</span>
+      </button>
+      <button ondblclick="openApp('crypto')" class="desktop-icon group w-24 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg"><i data-lucide="trending-up" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Crypto Terminal</span>
+      </button>
+      <button ondblclick="openApp('rfmon')" class="desktop-icon group w-24 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg"><i data-lucide="radio" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">RF Monitor</span>
+      </button>
+      <button ondblclick="openApp('player')" class="desktop-icon group w-24 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg"><i data-lucide="music" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Audio Deck</span>
+      </button>
+      <button ondblclick="openApp('sysinfo')" class="desktop-icon group w-24 p-2.5 rounded-2xl hover:bg-white/15 transition flex flex-col items-center gap-1.5 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg"><i data-lucide="cpu" class="w-6 h-6 text-white"></i></div>
+        <span class="text-xs font-medium drop-shadow leading-tight">Sys Monitor</span>
+      </button>
+    </div>
+
+    <!-- Windows Container Layer -->
+    <div id="windows-layer" class="absolute inset-0 pointer-events-none"></div>
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-12 right-4 z-[3000] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Bottom Floating Glass Dock -->
+  <nav aria-label="Application Dock" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-[1500] max-w-[96vw]">
+    <div id="dock-bar" class="glass-dock px-3 py-2 rounded-3xl flex items-end gap-2 sm:gap-3"></div>
+  </nav>
+
+  <!-- Master Script -->
+  <script>
+    lucide.createIcons();
+
+    // =========================================================================
+    // 1. AIM OS CENTRAL EVENT BUS (PUB/SUB LEDGER)
+    // =========================================================================
+    const AIM_BRAIN = {
+      events: [
+        { time: '18:04:00', source: 'OMNI', topic: 'BOOT', summary: 'Floor Plan Mapper, Crypto Terminal, RF Monitor, & Audio Deck fused successfully.' }
+      ],
+      publish(source, topic, summary) {
+        const time = new Date().toTimeString().split(' ')[0];
+        this.events.unshift({ time, source, topic, summary });
+        if (this.events.length > 50) this.events.pop();
+      }
+    };
+
+    // =========================================================================
+    // 2. APPLICATIONS REGISTRY & WINDOW MANAGER
+    // =========================================================================
+    const APPS = [
+      { id: 'floorplan', name: 'Conduit & Floor Plan', category: 'Spatial DB', width: 880, height: 560, gradient: 'from-blue-500 to-indigo-600', icon: '<i data-lucide="layout" class="w-6 h-6 text-white"></i>' },
+      { id: 'crypto', name: 'Crypto & Asset Terminal', category: 'Reqwest API', width: 860, height: 540, gradient: 'from-amber-400 to-orange-600', icon: '<i data-lucide="trending-up" class="w-6 h-6 text-white"></i>' },
+      { id: 'rfmon', name: 'RF & UHF Monitor', category: 'Serial Telemetry', width: 840, height: 520, gradient: 'from-cyan-400 to-blue-600', icon: '<i data-lucide="radio" class="w-6 h-6 text-white"></i>' },
+      { id: 'player', name: 'AiM Audio Deck', category: 'Rodio DSP', width: 820, height: 520, gradient: 'from-pink-500 to-rose-600', icon: '<i data-lucide="music" class="w-6 h-6 text-white"></i>' },
+      { id: 'sysinfo', name: 'System Monitor', category: 'Telemetry', width: 720, height: 480, gradient: 'from-emerald-400 to-teal-600', icon: '<i data-lucide="cpu" class="w-6 h-6 text-white"></i>' }
+    ];
+
+    let openWindows = {};
+    let zIndexCounter = 100;
+    let activeAppId = null;
+    let isLightGlass = false;
+
+    // Floor Plan State
+    let floorNodes = [
+      { id: 1, type: 'Antenna Node', zone: 'Roof Level (North)', x: 160, y: 90, status: 'Active' },
+      { id: 2, type: 'Vertical Conduit', zone: 'Shaft B-2', x: 280, y: 210, status: 'Routed' },
+      { id: 3, type: 'Fiber Junction', zone: 'Telecom Bay 1', x: 440, y: 320, status: 'Connected' }
+    ];
+    let selectedNodeType = 'Antenna Node';
+    let floorLogs = [
+      { time: '18:04:22', type: 'NODE_PLACED', details: 'Fiber Junction placed at Telecom Bay 1' },
+      { time: '18:03:50', type: 'SQLITE_SPATIAL', details: 'Committed spatial index transaction' }
+    ];
+
+    // Crypto State
+    let cryptoAssets = [
+      { symbol: 'BTC', name: 'Bitcoin', price: 92450.00, change24h: +3.42, momentum: 88 },
+      { symbol: 'ETH', name: 'Ethereum', price: 3420.50, change24h: +1.85, momentum: 74 },
+      { symbol: 'AIM', name: 'AiM Token', price: 14.50, change24h: +18.40, momentum: 96 }
+    ];
+
+    function renderDock() {
+      const dock = document.getElementById('dock-bar');
+      dock.innerHTML = APPS.map(app => {
+        const isOpen = Boolean(openWindows[app.id]);
+        return `
+          <button onclick="handleDockClick('${app.id}')" title="${app.name}" class="dock-item relative group flex flex-col items-center">
+            <span class="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-9 px-2.5 py-1 rounded-xl glass-surface text-[11px] font-medium whitespace-nowrap pointer-events-none shadow-lg">${app.name}</span>
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br ${app.gradient} flex items-center justify-center shadow-lg border border-white/25">${app.icon}</div>
+            <span class="w-1.5 h-1.5 rounded-full mt-1 transition-all ${isOpen ? 'bg-white opacity-100' : 'opacity-0'}"></span>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function handleDockClick(appId) {
+      if (!openWindows[appId]) openApp(appId);
+      else if (openWindows[appId].minimized) restoreWindow(appId);
+      else if (activeAppId === appId) minimizeWindow(appId);
+      else focusWindow(appId);
+    }
+
+    function openApp(appId) {
+      const app = APPS.find(a => a.id === appId);
+      if (!app) return;
+      if (openWindows[appId]) { restoreWindow(appId); focusWindow(appId); return; }
+
+      const layer = document.getElementById('windows-layer');
+      const offsetCount = Object.keys(openWindows).length;
+      const w = Math.min(window.innerWidth - 40, app.width);
+      const h = Math.min(window.innerHeight - 120, app.height);
+      const left = Math.max(20, (window.innerWidth - w) / 2 + offsetCount * 24);
+      const top = Math.max(48, (window.innerHeight - h) / 2 + offsetCount * 20);
+
+      const winEl = document.createElement('div');
+      winEl.id = `win-${appId}`;
+      winEl.className = 'window-frame glass-surface rounded-3xl flex flex-col overflow-hidden pointer-events-auto absolute';
+      winEl.style.width = `${w}px`;
+      winEl.style.height = `${h}px`;
+      winEl.style.left = `${left}px`;
+      winEl.style.top = `${top}px`;
+      winEl.style.zIndex = ++zIndexCounter;
+      winEl.addEventListener('mousedown', () => focusWindow(appId));
+
+      winEl.innerHTML = `
+        <div class="win-header h-11 px-4 flex items-center justify-between border-b border-white/15 bg-white/5 cursor-grab shrink-0">
+          <div class="flex items-center gap-2">
+            <button onclick="closeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-rose-500 hover:bg-rose-400"></button>
+            <button onclick="minimizeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-amber-400 hover:bg-amber-300"></button>
+            <button onclick="toggleMaximizeWindow('${appId}')" class="w-3.5 h-3.5 rounded-full bg-emerald-400 hover:bg-emerald-300"></button>
+          </div>
+          <div class="text-xs font-semibold tracking-tight">${app.name} <span class="opacity-60 font-mono text-[10px]">(${app.category})</span></div>
+          <div class="w-12"></div>
+        </div>
+        <div id="win-body-${appId}" class="flex-1 overflow-auto p-4 text-xs relative">
+          ${renderAppContent(appId)}
+        </div>
+        <div class="win-resizer absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize opacity-40 hover:opacity-90"></div>
+      `;
+
+      layer.appendChild(winEl);
+      openWindows[appId] = { id: appId, minimized: false };
+      makeWindowDraggableAndResizable(winEl, appId);
+      focusWindow(appId);
+      renderDock();
+      postRenderAppHook(appId);
+      AIM_BRAIN.publish(app.name.toUpperCase(), 'LAUNCH', `Launched ${app.name} window.`);
+    }
+
+    function focusWindow(appId) {
+      const winEl = document.getElementById(`win-${appId}`);
+      if (!winEl) return;
+      winEl.style.zIndex = ++zIndexCounter;
+      activeAppId = appId;
+      const app = APPS.find(a => a.id === appId);
+      document.getElementById('active-app-label').textContent = app ? `${app.name} • Active` : 'AIM OS Workspace';
+    }
+
+    function closeWindow(appId) {
+      document.getElementById(`win-${appId}`)?.remove();
+      delete openWindows[appId];
+      renderDock();
+    }
+
+    function minimizeWindow(appId) {
+      document.getElementById(`win-${appId}`)?.classList.add('window-minimized');
+      openWindows[appId].minimized = true;
+    }
+
+    function restoreWindow(appId) {
+      document.getElementById(`win-${appId}`)?.classList.remove('window-minimized');
+      openWindows[appId].minimized = false;
+      focusWindow(appId);
+    }
+
+    function toggleMaximizeWindow(appId) {
+      const win = document.getElementById(`win-${appId}`);
+      if (!win) return;
+      if (!win.dataset.maximized) {
+        win.dataset.prev = JSON.stringify({ left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height });
+        win.style.left = '10px'; win.style.top = '44px';
+        win.style.width = `${window.innerWidth - 20}px`;
+        win.style.height = `${window.innerHeight - 110}px`;
+        win.dataset.maximized = 'true';
+      } else {
+        const prev = JSON.parse(win.dataset.prev);
+        win.style.left = prev.left; win.style.top = prev.top;
+        win.style.width = prev.width; win.style.height = prev.height;
+        delete win.dataset.maximized;
+      }
+    }
+
+    function makeWindowDraggableAndResizable(winEl, appId) {
+      const header = winEl.querySelector('.win-header');
+      header.addEventListener('mousedown', e => {
+        if (e.target.tagName === 'BUTTON') return;
+        const startX = e.clientX, startY = e.clientY;
+        const startLeft = winEl.offsetLeft, startTop = winEl.offsetTop;
+        const onMove = ev => {
+          winEl.style.left = `${Math.max(0, startLeft + (ev.clientX - startX))}px`;
+          winEl.style.top = `${Math.max(40, startTop + (ev.clientY - startY))}px`;
+        };
+        const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    // =========================================================================
+    // 3. RENDER MODULE CONTENTS
+    // =========================================================================
+    function renderAppContent(appId) {
+      switch (appId) {
+        case 'floorplan':
+          return `
+            <div class="h-full flex flex-col gap-3 font-sans">
+              <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl glass-inner">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></span>
+                  <span class="font-mono text-[11px] text-blue-300">rusqlite::spatial_index (WKT geometry)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] opacity-75">Drop Tool:</span>
+                  <select id="node-type-select" onchange="selectedNodeType=this.value" class="px-3 py-1.5 rounded-xl bg-blue-500/30 border border-blue-400/40 text-xs font-semibold text-blue-200 outline-none">
+                    <option value="Antenna Node">Antenna Node</option>
+                    <option value="Vertical Conduit">Vertical Conduit</option>
+                    <option value="Fiber Junction">Fiber Junction</option>
+                    <option value="UHF Repeater">UHF Repeater</option>
+                  </select>
+                  <button onclick="clearFloorNodes()" class="px-3 py-1.5 rounded-xl bg-rose-500/30 hover:bg-rose-500/45 border border-rose-400/40 text-xs font-semibold transition">Reset</button>
+                </div>
+              </div>
+
+              <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0">
+                <div class="md:col-span-8 p-3 rounded-2xl glass-inner flex flex-col relative overflow-hidden min-h-[300px]">
+                  <div class="flex justify-between items-center text-[10px] uppercase tracking-wider opacity-60 pb-2">
+                    <span>Interactive Blueprint Canvas (Click to Drop Node)</span>
+                    <span class="font-mono text-blue-300">Nodes: ${floorNodes.length}</span>
+                  </div>
+                  <div id="blueprint-canvas-box" onclick="handleCanvasClick(event)" class="flex-1 rounded-2xl bg-slate-950/70 border border-white/15 relative overflow-hidden cursor-crosshair flex items-center justify-center">
+                    <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:32px_32px] opacity-40"></div>
+                    <div class="absolute top-6 left-6 w-40 h-28 rounded-xl border border-white/10 bg-white/5 p-2 text-[10px] opacity-40">Roof Array Zone</div>
+                    <div class="absolute top-6 right-6 w-48 h-48 rounded-xl border border-white/10 bg-white/5 p-2 text-[10px] opacity-40">Telecom Main Bay</div>
+                    ${floorNodes.map(node => `
+                      <div class="absolute px-2.5 py-1.5 rounded-xl glass-surface border border-blue-400/60 shadow-lg flex items-center gap-2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="left: ${node.x}px; top: ${node.y}px;">
+                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        <div class="text-[10px] font-mono leading-tight">
+                          <div class="font-semibold text-blue-200">${node.type}</div>
+                          <div class="opacity-60">${node.zone}</div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <div class="md:col-span-4 flex flex-col gap-3 min-h-0">
+                  <div class="h-44 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                    <div class="text-[10px] uppercase tracking-wider opacity-60 pb-1">Placed Nodes</div>
+                    <div class="flex-1 overflow-y-auto space-y-1.5">
+                      ${floorNodes.map(n => `
+                        <div class="p-2 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center text-[11px]">
+                          <div>
+                            <div class="font-semibold">${n.type}</div>
+                            <div class="text-[10px] opacity-60 font-mono">(${n.x}, ${n.y}) • ${n.zone}</div>
+                          </div>
+                          <span class="px-2 py-0.5 rounded-full bg-blue-400/20 text-blue-300 font-mono text-[9px]">${n.status}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+
+                  <div class="flex-1 p-3 rounded-2xl glass-inner flex flex-col min-h-0">
+                    <div class="flex items-center justify-between text-[10px] font-mono text-blue-300 pb-1.5 border-b border-white/10">
+                      <span>rusqlite::SpatialLedger</span>
+                      <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto pt-2 space-y-1.5 font-mono text-[10px]">
+                      ${floorLogs.map(l => `
+                        <div class="p-1.5 rounded-lg bg-white/5 border-l-2 border-blue-400">
+                          <div class="flex justify-between opacity-60"><span>${l.time}</span><span class="text-blue-300">${l.type}</span></div>
+                          <div class="truncate opacity-90">${l.details}</div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        case 'crypto':
+          return `
+            <div class="space-y-4 font-mono text-xs">
+              <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                <div><div class="text-amber-300 font-bold">CRYPTO & ASSET TERMINAL</div><div class="text-slate-400 text-[10px]">reqwest + serde_json Live Feed</div></div>
+                <button onclick="showToast('Crypto', 'Market indices refreshed.', 'amber')" class="px-3 py-1.5 rounded-xl bg-amber-500/30 text-amber-300 border border-amber-400/40">Sync Ticker</button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                ${cryptoAssets.map(c => `
+                  <div class="p-3.5 rounded-2xl glass-inner space-y-1">
+                    <div class="flex justify-between opacity-75"><span>${c.name}</span><span class="text-amber-300">${c.symbol}</span></div>
+                    <div class="text-xl font-bold font-mono">$${c.price.toLocaleString()}</div>
+                    <div class="text-[11px] ${c.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${c.change24h >= 0 ? '+' : ''}${c.change24h}% (24h)</div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="p-4 rounded-2xl glass-inner space-y-2">
+                <div class="font-semibold text-white">Order Book Execution Stream</div>
+                <div class="space-y-1 text-[11px] text-slate-300">
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-emerald-400">BUY LIMIT</span><span>0.42 BTC @ $92,400.00</span></div>
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-rose-400">SELL LIMIT</span><span>12.5 ETH @ $3,420.00</span></div>
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-emerald-400">BUY MARKET</span><span>150.0 AIM @ $14.50</span></div>
+                </div>
+              </div>
+            </div>
+          `;
+        case 'rfmon':
+          return `
+            <div class="space-y-4 font-mono text-xs">
+              <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                <div><div class="text-cyan-300 font-bold">RF & UHF MONITOR</div><div class="text-slate-400 text-[10px]">tokio-serial 5.4 • 450.250 MHz</div></div>
+                <span class="px-2.5 py-1 rounded-full bg-cyan-400/20 text-cyan-300 text-[10px]">RSSI: -72 dBm</span>
+              </div>
+              <div class="p-4 rounded-2xl glass-inner space-y-2">
+                <div class="flex justify-between text-slate-300"><span>Spectrum Waterfall</span><span class="text-cyan-300">Active Scan</span></div>
+                <canvas id="rfCanvas" class="w-full h-32 rounded-xl bg-black/80 block"></canvas>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-2xl glass-inner space-y-1">
+                  <div class="opacity-75">Packet Error Rate</div>
+                  <div class="text-lg font-bold text-emerald-300">0.014%</div>
+                </div>
+                <div class="p-3 rounded-2xl glass-inner space-y-1">
+                  <div class="opacity-75">Baud Rate</div>
+                  <div class="text-lg font-bold text-cyan-300">115200 bps</div>
+                </div>
+              </div>
+            </div>
+          `;
+        case 'player':
+          return `
+            <div class="space-y-4 font-mono text-xs">
+              <div class="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
+                <div><div class="text-pink-300 font-bold">AIM AUDIO DECK</div><div class="text-slate-400 text-[10px]">rodio + cpal audio engine</div></div>
+                <button onclick="toggleAudioPlayback()" id="audio-play-btn" class="px-3.5 py-1.5 rounded-xl bg-pink-500/30 text-pink-200 border border-pink-400/40 font-bold">Play Stream</button>
+              </div>
+              <div class="p-4 rounded-2xl glass-inner space-y-3">
+                <div class="flex items-center gap-4">
+                  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg"><i data-lucide="disc" class="w-8 h-8 text-white animate-spin"></i></div>
+                  <div>
+                    <div class="font-bold text-sm text-white">Drive (Deep House Mix)</div>
+                    <div class="opacity-75 text-[11px]">AiM Vancouver • 44.1 kHz FLAC</div>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <div class="flex justify-between text-[10px] opacity-70"><span>Master Gain</span><span id="audio-vol-label">80%</span></div>
+                  <input type="range" min="0" max="100" value="80" oninput="document.getElementById('audio-vol-label').textContent = this.value + '%'" class="w-full accent-pink-400">
+                </div>
+              </div>
+            </div>
+          `;
+        case 'sysinfo':
+          return `
+            <div class="space-y-4 font-mono text-xs">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-4 rounded-2xl glass-inner space-y-1">
+                  <div class="opacity-75">CPU Utilization</div>
+                  <div class="text-2xl font-bold text-emerald-300 font-mono">14.2%</div>
+                  <div class="text-[11px] opacity-65">8 Logical Cores • 120Hz</div>
+                </div>
+                <div class="p-4 rounded-2xl glass-inner space-y-1">
+                  <div class="opacity-75">RAM Memory Allocated</div>
+                  <div class="text-2xl font-bold text-sky-300 font-mono">4.2 / 16.0 GB</div>
+                  <div class="w-full h-1.5 rounded-full bg-white/15 overflow-hidden mt-1"><div class="h-full bg-sky-400" style="width: 26%"></div></div>
+                </div>
+              </div>
+              <div class="p-4 rounded-2xl glass-inner space-y-2">
+                <div class="font-semibold">Active Omni-Engine Subsystems</div>
+                <div class="space-y-1.5 text-[11px]">
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-blue-300">Conduit & Floor Plan Mapper</span><span class="text-emerald-400">ONLINE</span></div>
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-amber-300">Crypto & Asset Terminal</span><span class="text-emerald-400">ONLINE</span></div>
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-cyan-300">RF & UHF Telemetry Monitor</span><span class="text-emerald-400">ONLINE</span></div>
+                  <div class="flex justify-between p-2 rounded-xl bg-white/5"><span class="text-pink-300">AiM Audio Deck</span><span class="text-emerald-400">ONLINE</span></div>
+                </div>
+              </div>
+            </div>
+          `;
+        default: return '';
+      }
+    }
+
+    function postRenderAppHook(appId) {
+      if (appId === 'rfmon') initRfCanvas();
+      lucide.createIcons();
+    }
+
+    // =========================================================================
+    // 4. INTERACTION & MODULE HANDLERS
+    // =========================================================================
+    function handleCanvasClick(e) {
+      const box = document.getElementById('blueprint-canvas-box');
+      if (!box) return;
+      const rect = box.getBoundingClientRect();
+      const x = Math.round(e.clientX - rect.left);
+      const y = Math.round(e.clientY - rect.top);
+
+      const zones = ['Roof Sector Alpha', 'Shaft B-2', 'Telecom Bay 1', 'Sub-Level Corridor'];
+      const randomZone = zones[Math.floor(Math.random() * zones.length)];
+
+      const newNode = {
+        id: floorNodes.length + 1,
+        type: selectedNodeType,
+        zone: randomZone,
+        x: Math.max(30, Math.min(rect.width - 30, x)),
+        y: Math.max(30, Math.min(rect.height - 30, y)),
+        status: 'Active'
+      };
+
+      floorNodes.unshift(newNode);
+      const nowStr = new Date().toTimeString().split(' ')[0];
+      floorLogs.unshift({ time: nowStr, type: 'NODE_PLACED', details: `${newNode.type} dropped at (${newNode.x}, ${newNode.y})` });
+      showToast('Node Dropped', `${newNode.type} logged in SQLite spatial db`, 'blue');
+
+      const body = document.getElementById('win-body-floorplan');
+      if (body) body.innerHTML = renderFloorPlanApp();
+      lucide.createIcons();
+    }
+
+    function clearFloorNodes() {
+      floorNodes = [];
+      floorLogs.unshift({ time: new Date().toTimeString().split(' ')[0], type: 'SQLITE_PURGE', details: 'Spatial index cleared.' });
+      showToast('Grid Cleared', 'All blueprint nodes removed', 'amber');
+      const body = document.getElementById('win-body-floorplan');
+      if (body) body.innerHTML = renderFloorPlanApp();
+      lucide.createIcons();
+    }
+
+    function initRfCanvas() {
+      const canvas = document.getElementById('rfCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      function draw() {
+        requestAnimationFrame(draw);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < canvas.width; i += 4) {
+          const h = Math.sin(i * 0.05 + Date.now() * 0.005) * 20 + Math.random() * 12 + 40;
+          if (i === 0) ctx.moveTo(i, canvas.height - h);
+          else ctx.lineTo(i, canvas.height - h);
+        }
+        ctx.stroke();
+      }
+      draw();
+    }
+
+    let audioPlaying = false;
+    function toggleAudioPlayback() {
+      audioPlaying = !audioPlaying;
+      const btn = document.getElementById('audio-play-btn');
+      if (btn) btn.textContent = audioPlaying ? 'Pause Stream' : 'Play Stream';
+      showToast('Audio Deck', audioPlaying ? 'Streaming lossless audio...' : 'Audio paused.', 'pink');
+    }
+
+    // Toast System
+    function showToast(title, subtitle, accent = 'blue') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'glass-surface px-4 py-3 rounded-2xl shadow-xl flex items-start gap-3 w-72 transition-all duration-300 transform translate-x-4 opacity-0 pointer-events-auto';
+      const dot = accent === 'amber' ? 'bg-amber-400' : accent === 'pink' ? 'bg-pink-400' : 'bg-blue-400';
+      toast.innerHTML = `<span class="w-2.5 h-2.5 rounded-full ${dot} mt-1 shrink-0"></span><div class="text-xs"><div class="font-semibold">${title}</div><div class="opacity-75 mt-0.5">${subtitle}</div></div>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-x-4', 'opacity-0'));
+      setTimeout(() => { toast.classList.add('opacity-0', 'translate-x-4'); setTimeout(() => toast.remove(), 300); }, 3200);
+    }
+
+    // Controls & Global Handlers
+    function toggleMenu(id) {
+      const el = document.getElementById(id);
+      const isHidden = el.classList.contains('hidden');
+      ['system-menu', 'control-center'].forEach(i => document.getElementById(i)?.classList.add('hidden'));
+      if (isHidden) el.classList.remove('hidden');
+    }
+    document.addEventListener('click', e => { if (!e.target.closest('header')) { ['system-menu', 'control-center'].forEach(i => document.getElementById(i)?.classList.add('hidden')); } });
+
+    function toggleTheme() {
+      isLightGlass = !isLightGlass;
+      document.body.classList.toggle('light-glass', isLightGlass);
+    }
+
+    function setBrightness(val) {
+      document.getElementById('brightness-val').textContent = `${val}%`;
+      document.getElementById('brightness-overlay').style.opacity = (100 - val) / 100 * 0.75;
+    }
+
+    function sleepSystem() {
+      document.getElementById('sleep-screen').classList.remove('hidden');
+      document.getElementById('sleep-screen').classList.add('flex');
+    }
+    function wakeSystem() {
+      document.getElementById('sleep-screen').classList.add('hidden');
+      document.getElementById('sleep-screen').classList.remove('flex');
+      showToast('AIM OS', 'Runtime resumed.', 'blue');
+    }
+
+    setInterval(() => {
+      document.getElementById('top-clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDock();
+      setTimeout(() => openApp('floorplan'), 200);
+    });
+  </script>
+</body>
+</html>

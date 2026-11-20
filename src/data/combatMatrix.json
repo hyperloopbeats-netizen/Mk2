@@ -1,0 +1,1026 @@
+{
+  "system": {
+    "version": "3.5.0-64BIT",
+    "name": "DIMENSION-X COMBAT MATRIX",
+    "targetFps": 60,
+    "viewport": { "width": 960, "height": 540 },
+    "groundY": 445,
+    "cameraZoomDefault": 0.82,
+    "cameraZoomStiffened": 1.85,
+    "cameraZoomKnockdown": 1.95,
+    "announcerVoice": {
+      "ROUND_1": "ROUND ONE... FIGHT!",
+      "ROUND_2": "ROUND TWO... FIGHT!",
+      "FINAL_ROUND": "FINAL ROUND... DECIDE YOUR DESTINY!",
+      "FINISH_HIM": "FINISH HIM!",
+      "FINISH_HER": "FINISH HER!",
+      "FATALITY": "FATALITY!",
+      "FLAWLESS_VICTORY": "FLAWLESS VICTORY!",
+      "BRUTALITY": "BRUTALITY!",
+      "TOASTY": "TOASTY!",
+      "DANGER": "CRITICAL HEALTH DANGER!",
+      "SUPREME_CHAMPION": "SUPREME REALM CHAMPION!"
+    }
+  },
+  "globalCombos": [
+    {
+      "id": "BASIC_PRESSURE",
+      "name": "Demon Rush",
+      "inputs": ["LP", "HP"],
+      "hits": 2,
+      "damageMult": 1.15,
+      "evolution": "STARTER",
+      "timingWindowMs": 420
+    },
+    {
+      "id": "AERIAL_LAUNCH",
+      "name": "Skybound Execution",
+      "inputs": ["LP", "HP", "UPPERCUT"],
+      "hits": 3,
+      "damageMult": 1.35,
+      "evolution": "BRUTAL",
+      "timingWindowMs": 380
+    },
+    {
+      "id": "TRIP_CHAIN",
+      "name": "Sweeping Serpent",
+      "inputs": ["LK", "HK", "SWEEP"],
+      "hits": 3,
+      "damageMult": 1.30,
+      "evolution": "BRUTAL",
+      "timingWindowMs": 400
+    },
+    {
+      "id": "WEAPON_CANCEL_RUSH",
+      "name": "Titan Cleave Cascade",
+      "inputs": ["HP", "UPPERCUT", "WEAPON"],
+      "hits": 4,
+      "damageMult": 1.65,
+      "evolution": "SURGE",
+      "timingWindowMs": 340
+    },
+    {
+      "id": "ULTRA_DIMENSION_DEATH",
+      "name": "Dimension-X Oblivion",
+      "inputs": ["LP", "LK", "HP", "HK", "WEAPON"],
+      "hits": 6,
+      "damageMult": 2.20,
+      "evolution": "ULTRA",
+      "timingWindowMs": 300
+    }
+  ],
+  "characters": {
+    "scorpion": {
+      "id": "scorpion",
+      "name": "Scorpion",
+      "archetype": "Hellfire Ninja",
+      "realm": "Netherrealm",
+      "title": "Grandmaster of the Shirai Ryu",
+      "bio": "Resurrected specter driven by relentless vengeance, commanding demonic hellfire and barbed spear cables.",
+      "colors": {
+        "primary": "#eab308",
+        "secondary": "#18181b",
+        "accent": "#ef4444",
+        "glow": "#f59e0b",
+        "skin": "#e5c59f"
+      },
+      "stats": {
+        "health": 250,
+        "walkSpeed": 3.8,
+        "dashSpeed": 9.5,
+        "attackPower": 1.15,
+        "defense": 0.95,
+        "jumpForce": 14.5,
+        "weight": 82
+      },
+      "weapon": {
+        "class": "HELLFIRE_KUNAI",
+        "name": "Stinging Kunai Spear",
+        "meshType": "DAGGER",
+        "primaryColor": "#eab308",
+        "secondaryColor": "#78350f",
+        "trailColor": "#f97316",
+        "reach": 240,
+        "damage": 24,
+        "specialMove": "SCORPION_SPEAR"
+      },
+      "phrases": {
+        "signature": "GET OVER HERE!",
+        "secondary": "COME HERE!",
+        "attack": ["BURN!", "HARRGH!", "DIE, FOOL!", "TASTE HELLFIRE!"],
+        "pain": ["URGH!", "AGHH!", "CURSE YOU!", "IMPOSSIBLE!"],
+        "victory": ["VENGEANCE IS SATISFIED!", "THE SHIRAI RYU NEVER DIE!", "REST IN ASHES!"],
+        "fatality": ["TO ASHES AND HELLFIRE!", "YOUR SOUL BURNS IN NETHERREALM!"],
+        "roundStart": ["YOUR ANCESTORS WILL MOURN YOU!", "YOU SHALL SUFFER!"],
+        "taunt": ["IS THAT ALL THE FLAME IN YOU?", "YOU CANNOT EXTINGUISH ME!"]
+      },
+      "fatality": {
+        "name": "Toasty Netherrealm Decapitation",
+        "phases": [
+          { "step": 1, "name": "Vow of Vengeance", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Harpoon Piercing Heart", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 24 },
+          { "step": 3, "name": "Hellfire Torment", "delay": 2800, "zoom": 2.5, "focus": "victim", "shake": 28 },
+          { "step": 4, "name": "Skull Melt & Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 34 },
+          { "step": 5, "name": "Crumbling Ash Torso Drop", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Scorpion Victory Roar", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "subzero": {
+      "id": "subzero",
+      "name": "Sub-Zero",
+      "archetype": "Cryomancer Grandmaster",
+      "realm": "Earthrealm",
+      "title": "Grandmaster of the Lin Kuei",
+      "bio": "Master of absolute zero cryomancy, crafting razor-sharp crystalline ice weapons and freezing foes solid.",
+      "colors": {
+        "primary": "#06b6d4",
+        "secondary": "#0f172a",
+        "accent": "#38bdf8",
+        "glow": "#0284c7",
+        "skin": "#e2d3be"
+      },
+      "stats": {
+        "health": 250,
+        "walkSpeed": 3.7,
+        "dashSpeed": 9.2,
+        "attackPower": 1.10,
+        "defense": 1.05,
+        "jumpForce": 14.2,
+        "weight": 84
+      },
+      "weapon": {
+        "class": "KORI_BLADE",
+        "name": "Cryo-Glacial Broadsword",
+        "meshType": "SWORD",
+        "primaryColor": "#38bdf8",
+        "secondaryColor": "#0284c7",
+        "trailColor": "#a5f3fc",
+        "reach": 230,
+        "damage": 26,
+        "specialMove": "SUBZERO_WEAPON_SLASH"
+      },
+      "phrases": {
+        "signature": "FEEL THE CHILL OF DEATH!",
+        "secondary": "ABSOLUTE ZERO!",
+        "attack": ["FREEZE!", "CHILL TO THE BONE!", "COLD JUSTICE!", "SHATTER!"],
+        "pain": ["GLARGH!", "MY GUARD...", "NOT YET...", "BITTER COLD..."],
+        "victory": ["THIS REALM BELONGS TO THE LIN KUEI!", "FROZEN ETERNAL!", "WINTER HAS CLAIMED YOU."],
+        "fatality": ["SPINE RIP: FROZEN CARCASS!", "YOUR BLOOD FREEZES IN MY GRIP!"],
+        "roundStart": ["WINTER HAS ARRIVED.", "YOU ARE OUTMATCHED."],
+        "taunt": ["YOU SHIVER BEFORE MY MIGHT.", "TOO SLOW TO SURVIVE THE FROST."]
+      },
+      "fatality": {
+        "name": "Cryogenic Spine Rip & Glacial Shatter",
+        "phases": [
+          { "step": 1, "name": "Glacial Stalker Approach", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Deep Frozen Torso Clamp", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 24 },
+          { "step": 3, "name": "Cervical Spine Fracture", "delay": 2800, "zoom": 2.5, "focus": "victim_head", "shake": 30 },
+          { "step": 4, "name": "Spine Rip Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 35 },
+          { "step": 5, "name": "Frozen Carcass Drop & Shatter", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Lin Kuei Glacial Triumph", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "raiden": {
+      "id": "raiden",
+      "name": "Raiden",
+      "archetype": "God of Thunder",
+      "realm": "Heavens",
+      "title": "Protector of Earthrealm",
+      "bio": "Immortal Elder God commanding roaring lightning bolts, storm flight, and celestial judgment.",
+      "colors": {
+        "primary": "#3b82f6",
+        "secondary": "#f8fafc",
+        "accent": "#60a5fa",
+        "glow": "#93c5fd",
+        "skin": "#f1e5d1"
+      },
+      "stats": {
+        "health": 255,
+        "walkSpeed": 3.6,
+        "dashSpeed": 10.5,
+        "attackPower": 1.18,
+        "defense": 1.0,
+        "jumpForce": 15.0,
+        "weight": 86
+      },
+      "weapon": {
+        "class": "THUNDER_STAFF",
+        "name": "Staff of the Heavens",
+        "meshType": "STAFF",
+        "primaryColor": "#60a5fa",
+        "secondaryColor": "#1d4ed8",
+        "trailColor": "#93c5fd",
+        "reach": 260,
+        "damage": 25,
+        "specialMove": "RAIDEN_LIGHTNING"
+      },
+      "phrases": {
+        "signature": "THUNDER TAKE YOU!",
+        "secondary": "GIBBERISH GOD ROAR!",
+        "attack": ["BY THE ELDER GODS!", "LIGHTNING STRIKE!", "FALL BEFORE HEAVEN!", "BE JUDGED!"],
+        "pain": ["BY THE GODS!", "MY ESSENCE...", "EARTHREALM MUST NOT FALL!", "UURRGH!"],
+        "victory": ["EARTHREALM REMAINS SAFE UNDER MY VIGIL!", "HEAVEN DISPENSES JUSTICE!", "THE GODS HAVE SPOKEN."],
+        "fatality": ["ELECTRO-CRANIAL DETONATION!", "YOUR FLESH CONDUCTS HEAVEN'S WRATH!"],
+        "roundStart": ["I MUST CONSULT WITH THE ELDER GODS.", "CHALLENGE A GOD AT YOUR PERIL!"],
+        "taunt": ["YOU ARE MERELY MORTAL.", "NO MORTAL CAN RESIST THE STORM."]
+      },
+      "fatality": {
+        "name": "Gigavolt Cranial Electro-Burst",
+        "phases": [
+          { "step": 1, "name": "Thunder God Descent", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Lightning Palm Grasp", "delay": 1400, "zoom": 2.2, "focus": "victim_head", "shake": 26 },
+          { "step": 3, "name": "Skull Gigavolt Overload", "delay": 2800, "zoom": 2.5, "focus": "victim_head", "shake": 32 },
+          { "step": 4, "name": "Explosive Cranial Pop", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Charred Torso Floor Slam", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Protector Ascension", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "smoke": {
+      "id": "smoke",
+      "name": "Smoke",
+      "archetype": "Enenra Assassin",
+      "realm": "Netherrealm / Earthrealm",
+      "title": "The Living Vapor",
+      "bio": "Stealth assassin imbued with demonic vapor form, phase-teleporting through defenses and blinding targets with toxic clouds.",
+      "colors": {
+        "primary": "#64748b",
+        "secondary": "#0f172a",
+        "accent": "#94a3b8",
+        "glow": "#cbd5e1",
+        "skin": "#d8cbbe"
+      },
+      "stats": {
+        "health": 245,
+        "walkSpeed": 4.1,
+        "dashSpeed": 11.2,
+        "attackPower": 1.12,
+        "defense": 0.90,
+        "jumpForce": 15.5,
+        "weight": 76
+      },
+      "weapon": {
+        "class": "SMOKE_KATAR",
+        "name": "Vapor Punch Dagger",
+        "meshType": "DAGGER",
+        "primaryColor": "#94a3b8",
+        "secondaryColor": "#334155",
+        "trailColor": "#e2e8f0",
+        "reach": 210,
+        "damage": 23,
+        "specialMove": "SMOKE_TELEPORT"
+      },
+      "phrases": {
+        "signature": "WHERE THERE IS SMOKE, THERE IS FIRE!",
+        "secondary": "CHOKE ON VAPOR!",
+        "attack": ["DISAPPEAR!", "FROM THE MIST!", "CANNOT TOUCH ME!", "ASH TO ASH!"],
+        "pain": ["KHHH!", "MY MIST...", "CANNOT BE DISPERSED...", "AGH!"],
+        "victory": ["YOU CANNOT CATCH WHAT YOU CANNOT SEE.", "THE SHADOWS RECEIVE YOU.", "DRIFTING IN OBLIVION."],
+        "fatality": ["VAPOROUS LUNG RUPTURE!", "DROWN IN VOLCANIC ASH!"],
+        "roundStart": ["ONLY SMOKE REMAINS.", "YOU CANNOT CUT VAPOR."],
+        "taunt": ["YOU SWING AT EMPTY AIR.", "A GHOST CANNOT BE HURT."]
+      },
+      "fatality": {
+        "name": "Enenra Vapor Internal Combustion",
+        "phases": [
+          { "step": 1, "name": "Smoke Cloud Envelopment", "delay": 0, "zoom": 1.6, "focus": "victim", "shake": 0 },
+          { "step": 2, "name": "Asphyxiation Throat Grasp", "delay": 1400, "zoom": 2.2, "focus": "victim_neck", "shake": 22 },
+          { "step": 3, "name": "Superheated Vapor Injection", "delay": 2800, "zoom": 2.5, "focus": "victim_torso", "shake": 28 },
+          { "step": 4, "name": "Internal Steam Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 34 },
+          { "step": 5, "name": "Hollow Shell Collapse", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 18 },
+          { "step": 6, "name": "Smoke Dissolve Stance", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "liukang": {
+      "id": "liukang",
+      "name": "Liu Kang",
+      "archetype": "Shaolin Dragon",
+      "realm": "Earthrealm",
+      "title": "Champion of Mortal Kombat",
+      "bio": "Shaolin Grandmaster wielding blistering dragon fireballs, aerial bicycle kicks, and ancient martial arts mastery.",
+      "colors": {
+        "primary": "#dc2626",
+        "secondary": "#1c1917",
+        "accent": "#f59e0b",
+        "glow": "#ef4444",
+        "skin": "#e8c39e"
+      },
+      "stats": {
+        "health": 250,
+        "walkSpeed": 3.9,
+        "dashSpeed": 10.0,
+        "attackPower": 1.16,
+        "defense": 1.0,
+        "jumpForce": 15.0,
+        "weight": 80
+      },
+      "weapon": {
+        "class": "DRAGON_NUNCHAKU",
+        "name": "Blazing Dragon Flail",
+        "meshType": "NUNCHAKU",
+        "primaryColor": "#f59e0b",
+        "secondaryColor": "#b45309",
+        "trailColor": "#f97316",
+        "reach": 220,
+        "damage": 25,
+        "specialMove": "LIUKANG_DRAGON_FIRE"
+      },
+      "phrases": {
+        "signature": "WA-TAAAAH! FOR EARTHREALM!",
+        "secondary": "BEHOLD THE DRAGON!",
+        "attack": ["HI-YAH!", "DRAGON FIST!", "FEEL THE FLAME!", "FEEL MY POWER!"],
+        "pain": ["URGH!", "SHAOLIN SPIRIT ENDURES!", "AGHH!", "I CANNOT FAIL!"],
+        "victory": ["EARTHREALM IS SAVED ONCE MORE!", "THE WAY OF THE DRAGON PREVAILS!", "REST WITH HONOR."],
+        "fatality": ["DRAGON FORM CONSUMPTION!", "INCINERATION BY DRAGON'S MIGHT!"],
+        "roundStart": ["SHOW ME YOUR STRENGTH.", "PREPARE YOURSELF!"],
+        "taunt": ["YOU LACK DISCIPLINE.", "IS THIS YOUR BEST MARTIAL ART?"]
+      },
+      "fatality": {
+        "name": "Blazing Dragon Jaw Split & Fire Decapitation",
+        "phases": [
+          { "step": 1, "name": "Shaolin Dragon Focus", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Flaming Palm Liver Strike", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 24 },
+          { "step": 3, "name": "Bicycle Kick Rib Crushing", "delay": 2800, "zoom": 2.5, "focus": "victim_torso", "shake": 30 },
+          { "step": 4, "name": "Dragon Maw Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Scorched Body Drop", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Champion Fire Bow", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "sonya": {
+      "id": "sonya",
+      "name": "Sonya Blade",
+      "archetype": "Special Forces Commander",
+      "realm": "Earthrealm",
+      "title": "General of the Special Forces",
+      "bio": "Elite military operative armed with high-frequency wrist blasters, tactical energy rings, and bone-snapping leg grabs.",
+      "colors": {
+        "primary": "#16a34a",
+        "secondary": "#18181b",
+        "accent": "#4ade80",
+        "glow": "#22c55e",
+        "skin": "#fae8d4"
+      },
+      "stats": {
+        "health": 245,
+        "walkSpeed": 4.0,
+        "dashSpeed": 10.4,
+        "attackPower": 1.12,
+        "defense": 0.98,
+        "jumpForce": 14.8,
+        "weight": 72
+      },
+      "weapon": {
+        "class": "ENERGY_BLADES",
+        "name": "Special Forces Plasma Tonfa",
+        "meshType": "TONFA",
+        "primaryColor": "#22c55e",
+        "secondaryColor": "#15803d",
+        "trailColor": "#86efac",
+        "reach": 215,
+        "damage": 24,
+        "specialMove": "SONYA_RINGS"
+      },
+      "phrases": {
+        "signature": "TARGET NEUTRALIZED!",
+        "secondary": "SPECIAL FORCES SAYS HELLO!",
+        "attack": ["DOWN!", "TAKE THIS!", "BREACH!", "ENGAGING TARGET!"],
+        "pain": ["DAMN IT!", "STILL STANDING!", "AGHH!", "NEGATIVE!"],
+        "victory": ["MISSION ACCOMPLISHED. RETURN TO BASE.", "COMMANDER BLADE TO ALL UNITS: TARGET DOWN.", "JUST LIKE BASIC TRAINING."],
+        "fatality": ["TACTICAL AIR-STRIKE DISMEMBERMENT!", "TARGET CONFIRMED KIA!"],
+        "roundStart": ["YOU ARE IN VIOLATION OF SPECIAL FORCES LAW.", "READY TO ENGAGE."],
+        "taunt": ["YOU CALL THAT COMBAT FORMATION?", "ROOKIE MISTAKE."]
+      },
+      "fatality": {
+        "name": "Special Forces Scissor Split & Torso Sever",
+        "phases": [
+          { "step": 1, "name": "Combat Stance Lock", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Energy Ring Piercing Blast", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 24 },
+          { "step": 3, "name": "Acrobatic Neck Snap", "delay": 2800, "zoom": 2.5, "focus": "victim_neck", "shake": 30 },
+          { "step": 4, "name": "Laser Scissor Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 34 },
+          { "step": 5, "name": "Torso Impact on Concrete", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 19 },
+          { "step": 6, "name": "Salute to High Command", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "johnny": {
+      "id": "johnny",
+      "name": "Johnny Cage",
+      "archetype": "Hollywood Brawler",
+      "realm": "Earthrealm",
+      "title": "A-List Action Hero",
+      "bio": "Hollywood superstar blessed with ancestral Mediterranean green shadow energy, blazing nut-punches, and lethal roundhouses.",
+      "colors": {
+        "primary": "#3b82f6",
+        "secondary": "#172554",
+        "accent": "#22c55e",
+        "glow": "#10b981",
+        "skin": "#fed7aa"
+      },
+      "stats": {
+        "health": 248,
+        "walkSpeed": 3.9,
+        "dashSpeed": 10.2,
+        "attackPower": 1.14,
+        "defense": 0.96,
+        "jumpForce": 14.6,
+        "weight": 83
+      },
+      "weapon": {
+        "class": "CAGE_NUNCHAKU",
+        "name": "Oscar Platinum Award Club",
+        "meshType": "CLUB",
+        "primaryColor": "#fbbf24",
+        "secondaryColor": "#d97706",
+        "trailColor": "#34d399",
+        "reach": 220,
+        "damage": 25,
+        "specialMove": "JOHNNY_NUTPUNCH"
+      },
+      "phrases": {
+        "signature": "YOU GOT CAGED!",
+        "secondary": "THAT WAS AN $800 SHIRT!",
+        "attack": ["BOOM!", "SMILE FOR THE CAMERA!", "INTERNATIONAL BOX OFFICE!", "NUT PUNCH!"],
+        "pain": ["MY FACE! NOT THE FACE!", "MY AGENT WILL HEAR ABOUT THIS!", "OOF!", "WAIT, TIME OUT!"],
+        "victory": ["AND THE OSCAR GOES TO... ME!", "DON'T FORGET TO BUY THE MERCH!", "FLAWLESS ACTION HERO!"],
+        "fatality": ["HERE'S JOHNNY! TRIPLE UPPERCUT!", "THAT'S A WRAP, FOLKS!"],
+        "roundStart": ["LIGHTS, CAMERA, ASS-KICKING!", "AUTOGRAPHS AFTER THE SHOW."],
+        "taunt": ["YOU WOULDN'T LAST IN ACTING SCHOOL.", "LOOK AT THESE GUNS!"]
+      },
+      "fatality": {
+        "name": "Triple Upper Hollywood Decapitation",
+        "phases": [
+          { "step": 1, "name": "Adjusting Sunglasses", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Split Groin Punch Slam", "delay": 1400, "zoom": 2.2, "focus": "victim_pelvis", "shake": 25 },
+          { "step": 3, "name": "Jaw-Shattering Uppercut 1 & 2", "delay": 2800, "zoom": 2.5, "focus": "victim_head", "shake": 32 },
+          { "step": 4, "name": "Head Clean Off Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Falling Torso & Signed Photo Drop", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Johnny Sunglasses Wink", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "noob": {
+      "id": "noob",
+      "name": "Noob Saibot",
+      "archetype": "Shadow Wraith",
+      "realm": "Netherrealm",
+      "title": "Wraith of the Void",
+      "bio": "Corrupted specter of the original Sub-Zero, summoning dark clones from the void to rip foes into dimensions of utter darkness.",
+      "colors": {
+        "primary": "#09090b",
+        "secondary": "#18181b",
+        "accent": "#6366f1",
+        "glow": "#4338ca",
+        "skin": "#1e1b4b"
+      },
+      "stats": {
+        "health": 250,
+        "walkSpeed": 3.7,
+        "dashSpeed": 9.8,
+        "attackPower": 1.15,
+        "defense": 1.0,
+        "jumpForce": 14.5,
+        "weight": 84
+      },
+      "weapon": {
+        "class": "SHADOW_SCYTHE",
+        "name": "Obsidian Void Sickle",
+        "meshType": "SCYTHE",
+        "primaryColor": "#6366f1",
+        "secondaryColor": "#312e81",
+        "trailColor": "#818cf8",
+        "reach": 250,
+        "damage": 27,
+        "specialMove": "NOOB_SHADOW_CLONE"
+      },
+      "phrases": {
+        "signature": "FEAR THE VOID!",
+        "secondary": "WE ARE MANY. YOU ARE ONE.",
+        "attack": ["ENTER SHADOW!", "DRAG THEM DOWN!", "SUCCUMB TO DARKNESS!", "DIE!"],
+        "pain": ["KRRRGH!", "THE VOID REPAIRS ME...", "NOTHINGNESS CANNOT DIE...", "AGH!"],
+        "victory": ["THE VOID CONSUMES ALL LIGHT.", "DARKNESS ETERNAL.", "WELCOME TO NETHERREALM."],
+        "fatality": ["MAKE A WISH: SHADOW BI-SECTION!", "TEAR THEM IN HALF FROM THE VOID!"],
+        "roundStart": ["DARKNESS CALLS YOUR NAME.", "YOU WALK INTO THE GRAVE."],
+        "taunt": ["YOU FIGHT A SHADOW.", "LIGHT DIES HERE."]
+      },
+      "fatality": {
+        "name": "Shadow Clone Dual-Grip Torso Split",
+        "phases": [
+          { "step": 1, "name": "Shadow Manifestation", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Clone Dual Leg Lock", "delay": 1400, "zoom": 2.2, "focus": "victim_pelvis", "shake": 24 },
+          { "step": 3, "name": "Tearing Groin Fracture", "delay": 2800, "zoom": 2.5, "focus": "victim_torso", "shake": 32 },
+          { "step": 4, "name": "Full Vertical Bi-Section Rip", "delay": 4200, "zoom": 2.65, "focus": "severed_part", "shake": 38 },
+          { "step": 5, "name": "Dual Halves Ground Crash", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Wraith Melding Triumph", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "aimix": {
+      "id": "aimix",
+      "name": "Aimix",
+      "archetype": "Cybernetically Enhanced Synthesizer",
+      "realm": "Dimension-X",
+      "title": "Master of Acoustic Oblivion",
+      "bio": "Cybernetic god created inside the neural cores of Dimension-X, generating bone-shattering acoustic shockwaves and sonic blades.",
+      "colors": {
+        "primary": "#f97316",
+        "secondary": "#09090b",
+        "accent": "#06b6d4",
+        "glow": "#fb923c",
+        "skin": "#fed7aa"
+      },
+      "stats": {
+        "health": 260,
+        "walkSpeed": 4.0,
+        "dashSpeed": 11.0,
+        "attackPower": 1.22,
+        "defense": 1.05,
+        "jumpForce": 15.2,
+        "weight": 88
+      },
+      "weapon": {
+        "class": "ACOUSTIC_CANNON",
+        "name": "Ultrasonic Resonance Blade",
+        "meshType": "BLADE",
+        "primaryColor": "#f97316",
+        "secondaryColor": "#06b6d4",
+        "trailColor": "#fdba74",
+        "reach": 250,
+        "damage": 28,
+        "specialMove": "AIMIX_BASS_CANNON"
+      },
+      "phrases": {
+        "signature": "SYSTEM CRUSH: 160 DECIBELS!",
+        "secondary": "YOUR FREQUENCY IS TERMINATED!",
+        "attack": ["RESONATE!", "SONIC PULSE!", "SHATTER FREQUENCY!", "OBLIVION!"],
+        "pain": ["CORE ERROR!", "SHIELD REBOOTING...", "ORGANIC SCUM!", "AGHH!"],
+        "victory": ["HARMONIC EQUILIBRIUM RESTORED.", "ALL REALMS SHALL OBEY THE CODE.", "FLAWLESS SYNTHESIS."],
+        "fatality": ["ULTRASONIC LIQUEFACTION!", "DISINTEGRATE IN THE BASS DROP!"],
+        "roundStart": ["INITIALIZING COMBAT PROTOCOL 64-BIT.", "RESISTANCE IS MATHEMATICALLY ZERO."],
+        "taunt": ["YOUR SIGNALS ARE DISCORDANT.", "AN INFERIOR ARCHITECTURE."]
+      },
+      "fatality": {
+        "name": "Ultrasonic Liquefaction Acoustic Detonation",
+        "phases": [
+          { "step": 1, "name": "Frequency Overdrive Spool", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Ear Bleed Sonic Blast", "delay": 1400, "zoom": 2.2, "focus": "victim_head", "shake": 26 },
+          { "step": 3, "name": "Vibrational Cellular Rupture", "delay": 2800, "zoom": 2.5, "focus": "victim_torso", "shake": 32 },
+          { "step": 4, "name": "Sonic Head Liquefaction Pop", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 38 },
+          { "step": 5, "name": "Vaporized Body Collapse", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Synth Core Overload Victory", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "reptile": {
+      "id": "reptile",
+      "name": "Reptile",
+      "archetype": "Saurian Infiltrator",
+      "realm": "Zaterran Outworld",
+      "title": "Last of the Saurians",
+      "bio": "Acid-spitting Saurian reptilian possessing optical camouflage, toxic bile puddles, and razor talons.",
+      "colors": {
+        "primary": "#15803d",
+        "secondary": "#14532d",
+        "accent": "#84cc16",
+        "glow": "#a3e635",
+        "skin": "#86efac"
+      },
+      "stats": {
+        "health": 245,
+        "walkSpeed": 4.2,
+        "dashSpeed": 11.5,
+        "attackPower": 1.12,
+        "defense": 0.94,
+        "jumpForce": 15.6,
+        "weight": 78
+      },
+      "weapon": {
+        "class": "KAVEH_BLADE",
+        "name": "Acidic Bone Dagger",
+        "meshType": "DAGGER",
+        "primaryColor": "#84cc16",
+        "secondaryColor": "#15803d",
+        "trailColor": "#bef264",
+        "reach": 210,
+        "damage": 24,
+        "specialMove": "REPTILE_ACID_SPIT"
+      },
+      "phrases": {
+        "signature": "HISSSS! ZATERRA WILL RISE!",
+        "secondary": "DISSOLVE IN BILE!",
+        "attack": ["HISSS!", "ACID SPIT!", "EAT YOUR FLESH!", "DIE, WARM-BLOOD!"],
+        "pain": ["SQUEAL!", "MY SCALES...", "CURSE THE WARM-BLOODS...", "KRRR!"],
+        "victory": ["MY MATES SHALL FEAST ON YOUR CARCASS.", "ZATERRA IS AVENGED.", "YOUR BLOOD IS ACID IN MY BELLY."],
+        "fatality": ["ACID FACE MELT & TONGUE GORGE!", "STRIP THE MEAT FROM THE BONES!"],
+        "roundStart": ["I SMELL YOUR FEAR.", "YOU ARE PREY."],
+        "taunt": ["YOU CANNOT OUTRUN A HUNTER.", "TASTES LIKE WEAKNESS."]
+      },
+      "fatality": {
+        "name": "Saurian Caustic Acid Skull Melt",
+        "phases": [
+          { "step": 1, "name": "Camouflage Reveal & Hiss", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "High-Pressure Caustic Bile Jet", "delay": 1400, "zoom": 2.2, "focus": "victim_head", "shake": 24 },
+          { "step": 3, "name": "Facial Flesh Dissolve", "delay": 2800, "zoom": 2.5, "focus": "victim_head", "shake": 30 },
+          { "step": 4, "name": "Prehensile Tongue Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Skeleton Torso Collapse", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Reptile Flesh Gorge Triumph", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "kunglao": {
+      "id": "kunglao",
+      "name": "Kung Lao",
+      "archetype": "Razor-Rimmed Monk",
+      "realm": "Earthrealm",
+      "title": "Descendant of the Great Kung Lao",
+      "bio": "Shaolin pacifist transformed by duty into a lethal whirlwind, hurling his razor-rimmed bladed bowler hat with telekinetic accuracy.",
+      "colors": {
+        "primary": "#2563eb",
+        "secondary": "#1e293b",
+        "accent": "#93c5fd",
+        "glow": "#60a5fa",
+        "skin": "#fed7aa"
+      },
+      "stats": {
+        "health": 248,
+        "walkSpeed": 4.0,
+        "dashSpeed": 10.6,
+        "attackPower": 1.14,
+        "defense": 0.98,
+        "jumpForce": 15.2,
+        "weight": 79
+      },
+      "weapon": {
+        "class": "RAZOR_HAT",
+        "name": "Bladed Shaolin Chakram Hat",
+        "meshType": "CHAKRAM",
+        "primaryColor": "#cbd5e1",
+        "secondaryColor": "#1e293b",
+        "trailColor": "#93c5fd",
+        "reach": 235,
+        "damage": 26,
+        "specialMove": "KUNGLAO_HAT_THROW"
+      },
+      "phrases": {
+        "signature": "FOR MY ANCESTORS!",
+        "secondary": "THE BLADE OF WU SHI!",
+        "attack": ["SPIN!", "HAT TOSS!", "SHAOLIN TEMPEST!", "FEEL THE RIM!"],
+        "pain": ["URGH!", "HONOR SHALL NOT WAVER!", "AGHH!", "MY LINEAGE..."],
+        "victory": ["MY ANCESTORS SMILE UPON THIS VICTORY.", "THE BLADE NEVER MISSES.", "A LESSON IN SHAOLIN PRECISION."],
+        "fatality": ["BUZZSAW HAT VERTICAL SLICE!", "DIVIDE AND CONQUER!"],
+        "roundStart": ["I DO NOT SEEK BLOOD, BUT I DO NOT FEAR IT.", "PREPARE YOUR GUARD."],
+        "taunt": ["YOU LACK BALANCE.", "DO YOU WISH FOR A HAIR CUT?"]
+      },
+      "fatality": {
+        "name": "Buzzsaw Ground Hat Vertical Cleave",
+        "phases": [
+          { "step": 1, "name": "Hat Toss into Earth", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Victim Ankle Drag into Blade", "delay": 1400, "zoom": 2.2, "focus": "victim_legs", "shake": 25 },
+          { "step": 3, "name": "Pelvic Sawing Whir", "delay": 2800, "zoom": 2.5, "focus": "victim_torso", "shake": 32 },
+          { "step": 4, "name": "Bisection from Groin to Skull", "delay": 4200, "zoom": 2.65, "focus": "severed_part", "shake": 38 },
+          { "step": 5, "name": "Dual Slices Slump Down", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Catch Hat and Bow", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "kitana": {
+      "id": "kitana",
+      "name": "Kitana",
+      "archetype": "Edenian Princess",
+      "realm": "Edenia",
+      "title": "Princess of Edenia",
+      "bio": "Over 10,000-year-old royal assassin wielding steel folding fans capable of slicing steel armor and summoning levitating gale-force tornados.",
+      "colors": {
+        "primary": "#0284c7",
+        "secondary": "#0c4a6e",
+        "accent": "#38bdf8",
+        "glow": "#7dd3fc",
+        "skin": "#fed7aa"
+      },
+      "stats": {
+        "health": 245,
+        "walkSpeed": 4.1,
+        "dashSpeed": 10.8,
+        "attackPower": 1.13,
+        "defense": 0.97,
+        "jumpForce": 15.4,
+        "weight": 70
+      },
+      "weapon": {
+        "class": "STEEL_FANS",
+        "name": "Dual Bladed Edenian Fans",
+        "meshType": "FAN",
+        "primaryColor": "#38bdf8",
+        "secondaryColor": "#0284c7",
+        "trailColor": "#bae6fd",
+        "reach": 225,
+        "damage": 25,
+        "specialMove": "KITANA_FAN_THROW"
+      },
+      "phrases": {
+        "signature": "YOU WILL LEARN RESPECT!",
+        "secondary": "FOR EDENIA!",
+        "attack": ["SLICED!", "GALE FORCE!", "BOW DOWN!", "ROYAL CUT!"],
+        "pain": ["KHHH!", "MY REALM...", "HOW DARE YOU!", "AGHH!"],
+        "victory": ["EDENIA SHINES BRIGHT ONCE MORE.", "YOU ARE NOT WORTHY OF MY STEEL.", "REST IN ROYAL GRACE."],
+        "fatality": ["FAN DECAPITATION & TORSO SLICE!", "THE KISS OF EDENIAN DEATH!"],
+        "roundStart": ["I FIGHT FOR THE HONOR OF EDENIA.", "SURRENDER OR DIE."],
+        "taunt": ["YOU ARE RUDE AND CRUDE.", "YOU CANNOT MATCH 10,000 YEARS OF TRAINING."]
+      },
+      "fatality": {
+        "name": "Edenian Steel Fan Scissor Decapitation",
+        "phases": [
+          { "step": 1, "name": "Fan Snap Opening & Pose", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Gale Vortex Lift", "delay": 1400, "zoom": 2.2, "focus": "victim", "shake": 24 },
+          { "step": 3, "name": "Dual Fan Neck Shearing", "delay": 2800, "zoom": 2.5, "focus": "victim_neck", "shake": 30 },
+          { "step": 4, "name": "Clean Head Severance Cut", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Graceful Torso Fall", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 19 },
+          { "step": 6, "name": "Princess Fan Flutter Victory", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "mileena": {
+      "id": "mileena",
+      "name": "Mileena",
+      "archetype": "Tarkatan Clone",
+      "realm": "Outworld",
+      "title": "The Ravenous Heiress",
+      "bio": "Twisted Tarkatan clone combining Edenian elegance with a monstrous maw of razor fangs, teleport kicks, and sai daggers.",
+      "colors": {
+        "primary": "#c026d3",
+        "secondary": "#701a75",
+        "accent": "#f472b6",
+        "glow": "#e879f9",
+        "skin": "#fae8d4"
+      },
+      "stats": {
+        "health": 245,
+        "walkSpeed": 4.2,
+        "dashSpeed": 11.2,
+        "attackPower": 1.18,
+        "defense": 0.92,
+        "jumpForce": 15.5,
+        "weight": 71
+      },
+      "weapon": {
+        "class": "DUAL_SAI",
+        "name": "Barbed Outworld Sais",
+        "meshType": "DAGGER",
+        "primaryColor": "#e879f9",
+        "secondaryColor": "#86198f",
+        "trailColor": "#f472b6",
+        "reach": 215,
+        "damage": 26,
+        "specialMove": "MILEENA_TELEPORT_DROP"
+      },
+      "phrases": {
+        "signature": "I WILL TASTE YOUR HEART!",
+        "secondary": "DELICIOUS MEAT!",
+        "attack": ["FLESH!", "RAVENOUS!", "BITE!", "BLEED FOR ME!"],
+        "pain": ["SCREECH!", "MY BEAUTY!", "I'LL TEAR YOUR THROAT!", "HISSS!"],
+        "victory": ["TENDER AND DELICIOUS!", "KITANA IS A FAKE! I AM EMPRESS!", "MORE BONES TO CRUNCH!"],
+        "fatality": ["FACE RIP & JAW GORGE!", "SPIT THE BONES OUT!"],
+        "roundStart": ["LET US PLAY... TO THE DEATH!", "DO I FRIGHTEN YOU?"],
+        "taunt": ["YOU LOOK TASTY.", "SUCH A FRAGILE NECK!"]
+      },
+      "fatality": {
+        "name": "Tarkatan Throat Rip & Jaw Decapitation",
+        "phases": [
+          { "step": 1, "name": "Mask Drop & Fangs Bared", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Pounce onto Chest & Sai Pin", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 26 },
+          { "step": 3, "name": "Frenzied Cranial Bites", "delay": 2800, "zoom": 2.5, "focus": "victim_head", "shake": 32 },
+          { "step": 4, "name": "Head Severed by Tarkatan Maw", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 38 },
+          { "step": 5, "name": "Mutilated Carcass Floor Drop", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Mileena Blood Wipe Laugh", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "goro": {
+      "id": "goro",
+      "name": "Goro",
+      "archetype": "Four-Armed Shokan Prince",
+      "realm": "Outworld",
+      "title": "Prince of the Shokan",
+      "bio": "Towering four-armed behemoth undefeated for 500 years, crushing skulls with thunderous fists and ripping foes limb from limb.",
+      "colors": {
+        "primary": "#b45309",
+        "secondary": "#451a03",
+        "accent": "#f59e0b",
+        "glow": "#d97706",
+        "skin": "#d97706"
+      },
+      "stats": {
+        "health": 285,
+        "walkSpeed": 3.2,
+        "dashSpeed": 8.0,
+        "attackPower": 1.35,
+        "defense": 1.25,
+        "jumpForce": 13.5,
+        "weight": 145
+      },
+      "weapon": {
+        "class": "SHOKAN_HAMMERS",
+        "name": "Quad Heavy War Hammers",
+        "meshType": "HAMMER",
+        "primaryColor": "#f59e0b",
+        "secondaryColor": "#78350f",
+        "trailColor": "#fbbf24",
+        "reach": 270,
+        "damage": 32,
+        "specialMove": "GORO_GROUND_STOMP"
+      },
+      "phrases": {
+        "signature": "I WILL RIP YOU IN PIECES!",
+        "secondary": "FIVE HUNDRED YEARS UNDEFEATED!",
+        "attack": ["ROAAAR!", "PUNY MORTAL!", "CRUSH!", "BOW TO THE SHOKAN!"],
+        "pain": ["RAAARGH!", "MY HONOR!", "YOU WILL PAY FOR THAT!", "GROAN!"],
+        "victory": ["NO ONE CAN CONQUER GORO!", "SHOKAN SUPREMACY FOREVER!", "TRAMPLED UNDER MY BOOTS."],
+        "fatality": ["FOUR-ARM QUADRUPLE LIMB RIP!", "SKULL CRUSHING STOMP!"],
+        "roundStart": ["I WILL CRUSH YOUR TINY BONES.", "FACE THE PRINCE OF SHOKAN!"],
+        "taunt": ["YOU ARE TOO SMALL.", "A FLEA BITES HARSHER THAN YOU!"]
+      },
+      "fatality": {
+        "name": "Four-Armed Quad-Limb Dismemberment",
+        "phases": [
+          { "step": 1, "name": "Four Arm Flex & War Roar", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Quadruple Arm & Leg Clamp", "delay": 1400, "zoom": 2.2, "focus": "victim", "shake": 28 },
+          { "step": 3, "name": "Simultaneous Tendon Tear", "delay": 2800, "zoom": 2.5, "focus": "victim_limbs", "shake": 34 },
+          { "step": 4, "name": "All 4 Limbs Torn Clean Off", "delay": 4200, "zoom": 2.65, "focus": "severed_part", "shake": 40 },
+          { "step": 5, "name": "Limb-less Torso Spatter Down", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 24 },
+          { "step": 6, "name": "Goro Chest Pound Roar", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "robocop": {
+      "id": "robocop",
+      "name": "RoboCop",
+      "archetype": "Cybernetic Enforcer",
+      "realm": "Detroit 2043 / Earthrealm",
+      "title": "Future of Law Enforcement",
+      "bio": "Alex Murphy cybernetically reconstructed into an armored titanium peacekeeper equipped with Auto-9 armor-piercing burst fire.",
+      "colors": {
+        "primary": "#475569",
+        "secondary": "#0f172a",
+        "accent": "#38bdf8",
+        "glow": "#94a3b8",
+        "skin": "#94a3b8"
+      },
+      "stats": {
+        "health": 265,
+        "walkSpeed": 3.4,
+        "dashSpeed": 8.6,
+        "attackPower": 1.20,
+        "defense": 1.15,
+        "jumpForce": 13.8,
+        "weight": 110
+      },
+      "weapon": {
+        "class": "AUTO_9_PISTOL",
+        "name": "Auto-9 Burst Sidearm",
+        "meshType": "PISTOL",
+        "primaryColor": "#94a3b8",
+        "secondaryColor": "#334155",
+        "trailColor": "#38bdf8",
+        "reach": 280,
+        "damage": 26,
+        "specialMove": "ROBOCOP_BURST"
+      },
+      "phrases": {
+        "signature": "DEAD OR ALIVE, YOU'RE COMING WITH ME!",
+        "secondary": "YOUR MOVE, CREEP.",
+        "attack": ["DIRECT HIT.", "TARGET ENGAGED.", "APPLYING MAXIMUM FORCE.", "CEASE RESISTANCE."],
+        "pain": ["HYDRAULIC WARNING.", "ARMOR INTEGRITY COMPROMISED.", "SERVO STALL.", "SYSTEM RE-ROUTING."],
+        "victory": ["THANK YOU FOR YOUR COOPERATION. GOOD NIGHT.", "PRIME DIRECTIVES UPHELD.", "PERP NEUTRALIZED."],
+        "fatality": ["TARGETING AP-ROUND CRANIAL DETONATION!", "DEAD OR ALIVE!"],
+        "roundStart": ["DROP YOUR WEAPONS.", "YOU ARE IN DIRECT VIOLATION OF PENAL CODE 113."],
+        "taunt": ["YOU HAVE 10 SECONDS TO COMPLY.", "AN INSUFFICIENT CALIBER."]
+      },
+      "fatality": {
+        "name": "Auto-9 3-Round Burst Cranial Obliteration",
+        "phases": [
+          { "step": 1, "name": "Holster Thigh Pop & Gun Spin", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Laser Target Lock on Skull", "delay": 1400, "zoom": 2.2, "focus": "victim_head", "shake": 24 },
+          { "step": 3, "name": "Chest Breaching AP Round", "delay": 2800, "zoom": 2.5, "focus": "victim_chest", "shake": 30 },
+          { "step": 4, "name": "High-Explosive Head Shatter", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Heavy Metallic Fall to Deck", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 22 },
+          { "step": 6, "name": "Holster and Walk Away", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "leonardo": {
+      "id": "leonardo",
+      "name": "Leonardo",
+      "archetype": "Ninja Turtle Leader",
+      "realm": "New York Sewers",
+      "title": "Leader of the TMNT",
+      "bio": "Disciplined master of the twin ninjato katanas, leading his mutant ninja turtle brothers through sheer honor, courage, and lethal ninjutsu.",
+      "colors": {
+        "primary": "#2563eb",
+        "secondary": "#15803d",
+        "accent": "#60a5fa",
+        "glow": "#3b82f6",
+        "skin": "#22c55e"
+      },
+      "stats": {
+        "health": 252,
+        "walkSpeed": 3.9,
+        "dashSpeed": 10.3,
+        "attackPower": 1.15,
+        "defense": 1.05,
+        "jumpForce": 15.0,
+        "weight": 85
+      },
+      "weapon": {
+        "class": "TWIN_KATANAS",
+        "name": "Master Splinter Twin Katanas",
+        "meshType": "KATANA",
+        "primaryColor": "#e2e8f0",
+        "secondaryColor": "#1e3a8a",
+        "trailColor": "#60a5fa",
+        "reach": 235,
+        "damage": 26,
+        "specialMove": "LEONARDO_KATANA_DASH"
+      },
+      "phrases": {
+        "signature": "TURTLE POWER! COWABUNGA!",
+        "secondary": "FOR MASTER SPLINTER!",
+        "attack": ["HI-YAH!", "KATANA SLICE!", "HONOR PREVAILS!", "NINJUTSU!"],
+        "pain": ["SHELL IMPACT!", "UGH!", "I WILL NOT FALL!", "BROTHERS..."],
+        "victory": ["TURTLE POWER PREVAILS ONCE AGAIN!", "A WIN FOR THE ENTIRE CLAN!", "PIZZA TIME!"],
+        "fatality": ["TWIN KATANA X-CROSS DECAPITATION!", "NINJA SHELL OF STEEL!"],
+        "roundStart": ["WE DEFEND THE WEAK.", "PREPARE TO FACE A NINJA."],
+        "taunt": ["YOU HAVEN'T FACED TRUE NINJUTSU.", "SHREDDER HITS HARDER THAN YOU."]
+      },
+      "fatality": {
+        "name": "Twin Ninjato X-Cross Dual Decapitation",
+        "phases": [
+          { "step": 1, "name": "Twin Katana Draw & Flare", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Blink Katana Dash Across Torso", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 25 },
+          { "step": 3, "name": "X-Cut Delay Bleed Eruption", "delay": 2800, "zoom": 2.5, "focus": "victim_chest", "shake": 32 },
+          { "step": 4, "name": "Cranial Slide & Decapitation", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 36 },
+          { "step": 5, "name": "Victim Slump & Katana Sheath", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Sheath Swords and Fist Raise", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    },
+    "shangtsung": {
+      "id": "shangtsung",
+      "name": "Shang Tsung",
+      "archetype": "Soul Sorcerer",
+      "realm": "Outworld",
+      "title": "Grand Sorcerer of Outworld",
+      "bio": "Centuries-old shapeshifting sorcerer consuming the souls of vanquished combatants to sustain immortal youth and mastery of every fighter's skills.",
+      "colors": {
+        "primary": "#dc2626",
+        "secondary": "#0f172a",
+        "accent": "#10b981",
+        "glow": "#059669",
+        "skin": "#fed7aa"
+      },
+      "stats": {
+        "health": 250,
+        "walkSpeed": 3.8,
+        "dashSpeed": 10.0,
+        "attackPower": 1.16,
+        "defense": 0.98,
+        "jumpForce": 14.8,
+        "weight": 81
+      },
+      "weapon": {
+        "class": "SOUL_SWORD",
+        "name": "Spectral Soul Cleaver",
+        "meshType": "SWORD",
+        "primaryColor": "#10b981",
+        "secondaryColor": "#064e3b",
+        "trailColor": "#34d399",
+        "reach": 230,
+        "damage": 26,
+        "specialMove": "SHANGTSUNG_SOUL_STEAL"
+      },
+      "phrases": {
+        "signature": "YOUR SOUL IS MINE!",
+        "secondary": "YOUR POWER BELONGS TO SHANG TSUNG!",
+        "attack": ["SOUL FIRE!", "BOW BEFORE THE EMPEROR!", "DELICIOUS ESSENCE!", "WITHER!"],
+        "pain": ["IMPOSSIBLE!", "MY SOULS...", "YOU DEFY A SORCERER!", "AGHH!"],
+        "victory": ["ANOTHER WEAK SOUL JOINS MY FLESH.", "THE SORCERER TRIUMPHS AGAIN.", "I AM INVINCIBLE!"],
+        "fatality": ["SOUL EXTRACTION & SKELETON POP!", "YOUR SOUL WILL FEED ME FOR AN AGE!"],
+        "roundStart": ["YOUR SKILL SHALL BE ASSIMILATED.", "YOU FACE THE SOUL MASTER."],
+        "taunt": ["YOU ARE MERELY FOOD FOR MY SPELLS.", "COME CLOSER AND BE CONSUMED."]
+      },
+      "fatality": {
+        "name": "Soul Extraction & Skeletal Husk Implosion",
+        "phases": [
+          { "step": 1, "name": "Emerald Soul Flames Ignite", "delay": 0, "zoom": 1.6, "focus": "attacker", "shake": 0 },
+          { "step": 2, "name": "Soul Hand Plunge into Sternum", "delay": 1400, "zoom": 2.2, "focus": "victim_chest", "shake": 26 },
+          { "step": 3, "name": "Green Soul Vapor Extraction", "delay": 2800, "zoom": 2.5, "focus": "victim_chest", "shake": 32 },
+          { "step": 4, "name": "Skeletal Husk Decapitation Pop", "delay": 4200, "zoom": 2.65, "focus": "severed_head", "shake": 38 },
+          { "step": 5, "name": "Desiccated Skeleton Collapse", "delay": 5600, "zoom": 2.05, "focus": "floor_pool", "shake": 20 },
+          { "step": 6, "name": "Shang Tsung Soul Inhale Laugh", "delay": 7000, "zoom": 0.85, "focus": "victor", "shake": 0 }
+        ]
+      }
+    }
+  }
+}

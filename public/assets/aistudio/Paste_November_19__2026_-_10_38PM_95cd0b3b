@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MK 2D Sprite Mesh — Manual & Dual-System Engine Code 5 (2026-11-19)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #080b10;
+      color: #e6edf3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 10px;
+      padding: 12px;
+    }
+    canvas {
+      border: 1px solid #263244;
+      border-radius: 8px;
+      background: #101622;
+      max-width: 100%;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.65);
+    }
+    .bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: #9fb0c7;
+      max-width: 960px;
+    }
+    .slider-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #121a28;
+      border: 1px solid #26364e;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+    }
+    .slider-group input[type="range"] {
+      width: 84px;
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+    .legend {
+      font-size: 11px;
+      color: #7d8fa8;
+      max-width: 960px;
+      text-align: center;
+    }
+    button {
+      background: #1a2436;
+      color: #e6edf3;
+      border: 1px solid #30425f;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { background: #24334d; }
+    button.active { border-color: #f59e0b; color: #fcd34d; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="960" height="500"></canvas>
+  <div class="bar">
+    <button id="btn-mesh" class="active">2D Mesh: ON</button>
+    <button id="btn-diag" class="active">Diag HUD: ON</button>
+    <button id="btn-auto-p1" class="active">P1 AI: ON</button>
+    <button id="btn-auto-p2" class="active">P2 AI: ON</button>
+    <button id="btn-p1-roster">P1: SCORPION</button>
+    <button id="btn-p2-roster">P2: SUB-ZERO</button>
+    <button id="btn-stage">Infuse Stage: THE PIT</button>
+    <button id="btn-finisher">Trigger Finisher</button>
+    <button id="btn-heal" class="active">Self-Heal: ON</button>
+    <button id="btn-export">Export Studio JSON</button>
+    <button id="btn-chaos">Inject Fault Now</button>
+  </div>
+  <div class="bar">
+    <label class="slider-group">
+      <span>Spring k:</span>
+      <input id="slider-stiffness" type="range" min="60" max="600" step="5" value="265" />
+      <span id="val-stiffness">265</span>
+    </label>
+    <label class="slider-group">
+      <span>Damping d:</span>
+      <input id="slider-damping" type="range" min="2" max="60" step="1" value="22" />
+      <span id="val-damping">22</span>
+    </label>
+    <button id="preset-bouncy">Preset: Bouncy</button>
+    <button id="preset-stiff">Preset: Stiff</button>
+    <button id="preset-watery">Preset: Watery</button>
+    <span id="status">CODE 5 [2026-11-19] BOOTING...</span>
+  </div>
+  <div class="legend">
+    MK Arcade Map: WASD = Stick (W=Jump, S=Duck, A/D=Move) | U = HP | I = LP | O = Block | J = HK | K = LK | S+D+I = Projectile | D+HP = Uppercut | B+LK = Sweep | B+HK = Roundhouse | Close+LP = Throw
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const BUILD_DATE = "2026-11-19";
+    const CODE_PART = "CODE-5";
+
+    // =========================================================================
+    // MODULE 01: ARCADE MANUAL SPEC, CABINET DIP MATRIX & TELEMETRY
+    // =========================================================================
+    const M01_ArcadeManualSpec = {
+      buildDate: BUILD_DATE,
+      codePart: CODE_PART,
+      defaultRoundSeconds: 99,
+      finisherWindowSeconds: 4.0,
+      buttons: Object.freeze({
+        START: "Enter",
+        UP: "KeyW",
+        DOWN: "KeyS",
+        LEFT: "KeyA",
+        RIGHT: "KeyD",
+        HP: "KeyU",
+        LP: "KeyI",
+        BL: "KeyO",
+        HK: "KeyJ",
+        LK: "KeyK"
+      }),
+      moveValues: Object.freeze({
+        HP:         { startup: 2, active: [2, 3],    recovery: 4, damage: 10, chip: 1, hitstun: 13, blockstun: 8,  kbX: 140, launchY: 0 },
+        LP:         { startup: 2, active: [2, 3],    recovery: 3, damage: 7,  chip: 1, hitstun: 11, blockstun: 7,  kbX: 110, launchY: 0 },
+        HK:         { startup: 3, active: [3, 4],    recovery: 6, damage: 15, chip: 2, hitstun: 17, blockstun: 11, kbX: 220, launchY: 0 },
+        LK:         { startup: 2, active: [2, 3],    recovery: 4, damage: 9,  chip: 1, hitstun: 12, blockstun: 8,  kbX: 130, launchY: 0 },
+        UPPERCUT:   { startup: 3, active: [3, 4, 5], recovery: 9, damage: 20, chip: 3, hitstun: 24, blockstun: 14, kbX: 150, launchY: -620 },
+        SWEEP:      { startup: 3, active: [3, 4],    recovery: 8, damage: 12, chip: 2, hitstun: 20, blockstun: 12, kbX: 120, launchY: -220, knockdown: true },
+        ROUNDHOUSE: { startup: 4, active: [4, 5],    recovery: 9, damage: 17, chip: 3, hitstun: 19, blockstun: 13, kbX: 270, launchY: -160 },
+        THROW:      { startup: 2, active: [2],       recovery: 7, damage: 16, chip: 0, hitstun: 22, blockstun: 0,  kbX: 290, launchY: -340, unblockableClose: true },
+        PROJECTILE: { startup: 3, active: [3, 4],    recovery: 8, damage: 13, chip: 2, hitstun: 16, blockstun: 11, kbX: 190, launchY: 0, spawnProjFrame: 3 }
+      })
+    };
+
+    const STAGE_PRESETS = [
+      { id: "THE_PIT",       name: "THE PIT",       floorFill: "#1b2538", rimStroke: "#38bdf8", hazardAmp: 0.4, gridPitch: 24 },
+      { id: "LIVING_FOREST", name: "LIVING FOREST", floorFill: "#172922", rimStroke: "#34d399", hazardAmp: 0.7, gridPitch: 32 },
+      { id: "GOROS_LAIR",    name: "GORO'S LAIR",   floorFill: "#2a1822", rimStroke: "#f59e0b", hazardAmp: 1.0, gridPitch: 20 }
+    ];
+
+    const SPRING_PRESETS = Object.freeze({
+      bouncy: { id: "bouncy", stiffness: 190, damping: 6 },
+      stiff:  { id: "stiff",  stiffness: 560, damping: 46 },
+      watery: { id: "watery", stiffness: 95,  damping: 14 }
+    });
+
+    const M01_Config = {
+      width: 960,
+      height: 500,
+      floorY: 410,
+      gravity: 2150,
+      fixedDt: 1 / 60,
+      maxFrameDt: 0.1,
+      physicsSubsteps: 2,
+      constraintIterations: 2,
+      arenaLeft: 70,
+      arenaRight: 890,
+      maxStateFrames: 180,
+      snapshotIntervalTicks: 10,
+      maxSnapshots: 30,
+      cabinetDip: {
+        freePlay: true,
+        difficulty: 3,
+        autoAdaptDifficulty: true,
+        roundTime: M01_ArcadeManualSpec.defaultRoundSeconds,
+        bloodGore: true,
+        slamTilt: false
+      },
+      infusion: {
+        stageIndex: 0,
+        activeFinisherWindow: false,
+        finisherTimer: 0,
+        lastFinisher: "NONE",
+        stageInfusionLevel: 0,
+        hazardPulsePhase: 0,
+        springPreset: "CUSTOM",
+        meshSpringStiffness: 265,
+        meshSpringDamping: 22,
+        shakeIntensity: 0
+      },
+      telemetry: {
+        fps: 60,
+        tickCount: 0,
+        substepCount: 0,
+        hitstopFrames: 0,
+        roundNumber: 1,
+        roundClock: M01_ArcadeManualSpec.defaultRoundSeconds,
+        roundPhase: "FIGHT",
+        selfHealEnabled: true,
+        healsPerformed: 0,
+        lastHealReason: "NONE",
+        healLog: [],
+        showMesh: true,
+        showDiagnostics: true,
+        p1Autonomous: true,
+        p2Autonomous: true
+      }
+    };
+
+    // =========================================================================
+    // MODULE 02: SPRITE, ROSTER & 2D MOVEMENT MESH ATLAS
+    // =========================================================================
+    const M02_SpriteMeshAtlas = {
+      sheets: new Map(),
+      fighters: new Map(),
+      rosterOrder: ["SCORPION_MK_REMIX", "SUBZERO_MK_REMIX", "RAIDEN_MK_REMIX"],
+
+      registerFighter(fighterId, spec) {
+        this.fighters.set(fighterId, spec);
+      },
+
+      loadSpriteSheet(sheetId, url) {
+        const entry = { img: new Image(), loaded: false, url };
+        entry.img.onload = () => { entry.loaded = true; };
+        entry.img.onerror = () => {
+          entry.loaded = false;
+          M08_Watchdog.recordHeal(`Sprite fallback [${sheetId}]`);
+        };
+        if (url) entry.img.src = url;
+        this.sheets.set(sheetId, entry);
+      },
+
+      defaultMeshForState(state, phaseRatio = 0, squashY = 1, meshScale = 1) {
+        const crouchOffset = ["crouch", "sweep"].includes(state) ? 34 : 0;
+        const punchReach = ["hp", "lp", "throw", "projectile"].includes(state) ? 52 + Math.sin(phaseRatio * Math.PI) * 36 : 16;
+        const kickReach = ["hk", "lk", "roundhouse", "sweep"].includes(state) ? 58 + Math.sin(phaseRatio * Math.PI) * 40 : 18;
+        const uppercutLift = state === "uppercut" ? -38 - Math.sin(phaseRatio * Math.PI) * 48 : 0;
+        const airLift = state === "jump" ? -18 : 0;
+        const sc = (val) => val * squashY * meshScale;
+        const sx = (val) => val * meshScale;
+
+        return {
+          root:      { x: sx(0), y: sc(0 + airLift + uppercutLift), r: 8, type: "ROOT" },
+          pelvis:    { x: sx(0), y: sc(-52 + crouchOffset + airLift + uppercutLift), r: 14, type: "HURT" },
+          torso:     { x: sx(5), y: sc(-92 + crouchOffset + airLift + uppercutLift), r: 18, type: "HURT" },
+          head:      { x: sx(state === "uppercut" ? 16 : 8), y: sc(-128 + crouchOffset + airLift + uppercutLift), r: 14, type: "HURT" },
+          frontHand: {
+            x: sx(state === "uppercut" ? 38 : punchReach),
+            y: sc((state === "uppercut" ? -138 : -98) + crouchOffset + airLift + uppercutLift),
+            r: ["hp", "lp", "throw", "uppercut", "projectile"].includes(state) ? 17 : 9,
+            type: ["hp", "lp", "throw", "uppercut", "projectile"].includes(state) ? "HIT" : "LIMB"
+          },
+          backHand:  { x: sx(-12), y: sc(-94 + crouchOffset + airLift + uppercutLift), r: 9, type: "LIMB" },
+          frontFoot: {
+            x: sx(kickReach),
+            y: sc((state === "sweep" ? -14 : state === "roundhouse" ? -96 : -68) + crouchOffset + airLift + uppercutLift),
+            r: ["hk", "lk", "roundhouse", "sweep"].includes(state) ? 18 : 10,
+            type: ["hk", "lk", "roundhouse", "sweep"].includes(state) ? "HIT" : "LIMB"
+          },
+          backFoot:  { x: sx(-20), y: sc(-8 + airLift + uppercutLift), r: 10, type: "LIMB" }
+        };
+      },
+
+      getFrameData(fighterId, state, frameIdx, squashY = 1) {
+        const spec = this.fighters.get(fighterId) || this.fighters.get("SCORPION_MK_REMIX");
+        const anim = (spec && spec.anims && spec.anims[state]) || { frames: 6, loop: true };
+        const safeFrames = Math.max(1, Number(anim.frames) || 1);
+        const idx = Math.abs(Math.floor(frameIdx)) % safeFrames;
+        const ratio = safeFrames > 1 ? idx / (safeFrames - 1) : 0;
+
+        const moveKey = state.toUpperCase();
+        const manualMove = M01_ArcadeManualSpec.moveValues[moveKey];
+        const hitWindow = manualMove ? manualMove.active : (anim.hitWindow || []);
+        const isActiveHit = Array.isArray(hitWindow) && hitWindow.includes(idx);
+
+        const meshScale = spec && spec.meshScale ? spec.meshScale : 1;
+        const rawNodes = typeof anim.meshFn === "function"
+          ? anim.meshFn(idx, ratio, squashY, meshScale)
+          : this.defaultMeshForState(state, ratio, squashY, meshScale);
+
+        const nodes = {};
+        for (const [k, v] of Object.entries(rawNodes)) {
+          nodes[k] = {
+            x: Number.isFinite(v.x) ? v.x : 0,
+            y: Number.isFinite(v.y) ? v.y : 0,
+            r: Number.isFinite(v.r) ? Math.max(4, v.r) : 10,
+            type: v.type === "HIT" && !isActiveHit ? "LIMB" : (v.type || "LIMB")
+          };
+        }
+
+        const sheet = spec && spec.sheetId ? this.sheets.get(spec.sheetId) : null;
+        const frameRect = anim.rects && anim.rects[idx] ? anim.rects[idx] : null;
+
+        return {
+          idx,
+          totalFrames: safeFrames,
+          loop: Boolean(anim.loop),
+          isActiveHit,
+          spawnProjFrame: manualMove && manualMove.spawnProjFrame !== undefined ? manualMove.spawnProjFrame : -1,
+          damage: manualMove ? manualMove.damage : 10,
+          chipDamage: manualMove ? manualMove.chip : 1,
+          hitstun: manualMove ? manualMove.hitstun : 14,
+          blockstun: manualMove ? manualMove.blockstun : 9,
+          knockbackX: manualMove ? manualMove.kbX : 150,
+          launchY: manualMove ? manualMove.launchY : 0,
+          knockdown: Boolean(manualMove && manualMove.knockdown),
+          unblockableClose: Boolean(manualMove && manualMove.unblockableClose),
+          sheet,
+          frameRect,
+          nodes,
+          tint: (spec && spec.tint) || "#f59e0b",
+          projectileColor: (spec && spec.projectileColor) || "#fb923c"
+        };
+      }
+    };
+
+    const mkAnims = {
+      idle:       { frames: 8, loop: true },
+      walk:       { frames: 8, loop: true },
+      crouch:     { frames: 4, loop: true },
+      jump:       { frames: 6, loop: false },
+      hp:         { frames: 7, loop: false },
+      lp:         { frames: 6, loop: false },
+      hk:         { frames: 8, loop: false },
+      lk:         { frames: 7, loop: false },
+      uppercut:   { frames: 10, loop: false },
+      sweep:      { frames: 9, loop: false },
+      roundhouse: { frames: 10, loop: false },
+      throw:      { frames: 8, loop: false },
+      projectile: { frames: 9, loop: false },
+      hitstun:    { frames: 5, loop: false },
+      blockstun:  { frames: 4, loop: false },
+      ko:         { frames: 6, loop: false }
+    };
+
+    M02_SpriteMeshAtlas.loadSpriteSheet("mk_arcade_sheet", "");
+    M02_SpriteMeshAtlas.registerFighter("SCORPION_MK_REMIX", {
+      name: "SCORPION",
+      sheetId: "mk_arcade_sheet",
+      meshScale: 1.0,
+      tint: "#f59e0b",
+      projectileColor: "#fb923c",
+      anims: mkAnims
+    });
+    M02_SpriteMeshAtlas.registerFighter("SUBZERO_MK_REMIX", {
+      name: "SUB-ZERO",
+      sheetId: "mk_arcade_sheet",
+      meshScale: 1.0,
+      tint: "#38bdf8",
+      projectileColor: "#67e8f9",
+      anims: mkAnims
+    });
+    M02_SpriteMeshAtlas.registerFighter("RAIDEN_MK_REMIX", {
+      name: "RAIDEN",
+      sheetId: "mk_arcade_sheet",
+      meshScale: 1.05,
+      tint: "#a78bfa",
+      projectileColor: "#c4b5fd",
+      anims: mkAnims
+    });
+
+    // =========================================================================
+    // MODULE 03: ARCADE MANUAL INPUT & COMMAND BUFFER
+    // =========================================================================
+    const M03_InputBus = {
+      keysDown: new Set(),
+      queues: { p1: [], p2: [] },
+      history: { p1: [], p2: [] },
+
+      init() {
+        window.addEventListener("keydown", (e) => {
+          this.keysDown.add(e.code);
+          const b = M01_ArcadeManualSpec.buttons;
+          if (e.code === b.HP) this.pushCommand("p1", "HP");
+          if (e.code === b.LP) this.pushCommand("p1", "LP");
+          if (e.code === b.HK) this.pushCommand("p1", "HK");
+          if (e.code === b.LK) this.pushCommand("p1", "LK");
+          if (e.code === b.UP) this.pushCommand("p1", "UP");
+          if (e.code === b.START) this.pushCommand("p1", "START");
+        });
+        window.addEventListener("keyup", (e) => {
+          this.keysDown.delete(e.code);
+        });
+      },
+
+      pollStick(slot, facing) {
+        if (slot !== "p1") return { moveX: 0, crouch: false, blocking: false };
+        const b = M01_ArcadeManualSpec.buttons;
+        let moveX = 0;
+        if (this.keysDown.has(b.LEFT)) moveX -= 1;
+        if (this.keysDown.has(b.RIGHT)) moveX += 1;
+        const crouch = this.keysDown.has(b.DOWN);
+        const blocking = this.keysDown.has(b.BL);
+
+        const rel = moveX === 0 ? 0 : (moveX * facing > 0 ? 1 : -1);
+        const dirTag = crouch ? (rel > 0 ? "DF" : rel < 0 ? "DB" : "D") : (rel > 0 ? "F" : rel < 0 ? "B" : "N");
+        const hist = this.history[slot];
+        const last = hist[hist.length - 1];
+        if (!last || last.dir !== dirTag) {
+          hist.push({ dir: dirTag, age: 0 });
+          if (hist.length > 10) hist.shift();
+        }
+        return { moveX, crouch, blocking };
+      },
+
+      hasQuarterCircleForward(slot) {
+        const dirs = (this.history[slot] || []).map((h) => h.dir);
+        const seq = ["D", "DF", "F"];
+        let ptr = 0;
+        for (const d of dirs) {
+          if (d === seq[ptr]) {
+            ptr += 1;
+            if (ptr === seq.length) return true;
+          }
+        }
+        return false;
+      },
+
+      resolveManualMove(f, opp, rawBtn, stick) {
+        if (rawBtn === "START") return null;
+        if (rawBtn === "UP") return "jump";
+
+        const dist = Math.abs(opp.x - f.x);
+        const isClose = dist < 76 && Math.abs(f.y - opp.y) < 55;
+        const relDir = stick.moveX === 0 ? 0 : (stick.moveX * f.facing > 0 ? 1 : -1);
+
+        if (M01_Config.infusion.activeFinisherWindow && rawBtn === "HP") {
+          const fCount = (this.history[f.slot] || []).filter((h) => h.dir === "F").length;
+          if (fCount >= 2 || isClose) return "FINISHER_STAGE_INFUSE";
+        }
+
+        if (rawBtn === "LP" && this.hasQuarterCircleForward(f.slot)) {
+          this.history[f.slot] = [];
+          return "projectile";
+        }
+
+        if (stick.crouch) {
+          if (rawBtn === "HP" || rawBtn === "LP") return "uppercut";
+          if (rawBtn === "LK") return "sweep";
+          if (rawBtn === "HK") return "lk";
+        }
+        if (relDir < 0 && f.grounded) {
+          if (rawBtn === "LK") return "sweep";
+          if (rawBtn === "HK") return "roundhouse";
+        }
+        if (isClose && f.grounded) {
+          if (rawBtn === "LP") return "throw";
+          if (rawBtn === "HP") return "hp";
+          if (rawBtn === "LK" || rawBtn === "HK") return "lk";
+        }
+        if (!f.grounded) {
+          return ["HP", "LP"].includes(rawBtn) ? "hp" : "hk";
+        }
+        return rawBtn.toLowerCase();
+      },
+
+      pushCommand(slot, cmd) {
+        const q = this.queues[slot];
+        if (!Array.isArray(q)) return;
+        if (q.length < 8) q.push({ cmd, ttl: 10 });
+      },
+
+      consumeCommand(slot) {
+        const q = this.queues[slot];
+        while (q && q.length > 0) {
+          const item = q.shift();
+          if (item && item.ttl > 0) return item.cmd;
+        }
+        return null;
+      },
+
+      tickQueues() {
+        for (const q of Object.values(this.queues)) {
+          for (let i = q.length - 1; i >= 0; i--) {
+            q[i].ttl -= 1;
+            if (q[i].ttl <= 0) q.splice(i, 1);
+          }
+        }
+        for (const h of Object.values(this.history)) {
+          for (let i = h.length - 1; i >= 0; i--) {
+            h[i].age += 1;
+            if (h[i].age > 24) h.splice(i, 1);
+          }
+        }
+      }
+    };
+
+    // =========================================================================
+    // MODULE 04: 2D MESH PHYSICS, STAGE HAZARDS & PROJECTILES
+    // =========================================================================
+    const M04_MeshPhysics = {
+      projectiles: [],
+
+      addShake(amount) {
+        M01_Config.infusion.shakeIntensity = Math.min(18, Math.max(M01_Config.infusion.shakeIntensity, amount));
+      },
+
+      ensureMeshDynamics(f) {
+        if (!f.meshDyn) f.meshDyn = {};
+        if (!f.activeFrame || !f.activeFrame.nodes) return;
+        for (const [name, target] of Object.entries(f.activeFrame.nodes)) {
+          const tx = f.x + target.x * f.facing;
+          const ty = f.y + target.y;
+          if (!f.meshDyn[name]) {
+            f.meshDyn[name] = { wx: tx, wy: ty, vx: 0, vy: 0 };
+          }
+        }
+      },
+
+      integrateKinematics(f, opp, subDt) {
+        const busy = ["hp", "lp", "hk", "lk", "uppercut", "sweep", "roundhouse", "throw", "projectile", "hitstun", "blockstun", "ko"].includes(f.state);
+        if (f.grounded && !busy) {
+          f.facing = opp.x >= f.x ? 1 : -1;
+        }
+
+        const speed = f.state === "walk" ? 255 : 0;
+        if (f.state === "walk") {
+          f.vx = f.moveDir * speed;
+        } else if (f.grounded && !["hitstun", "blockstun"].includes(f.state)) {
+          f.vx *= Math.pow(0.001, subDt);
+        }
+
+        if (!f.grounded || f.vy < 0) {
+          f.vy += M01_Config.gravity * subDt;
+        }
+
+        f.x += f.vx * subDt;
+        f.y += f.vy * subDt;
+
+        if (f.y >= M01_Config.floorY) {
+          f.y = M01_Config.floorY;
+          f.vy = 0;
+          f.grounded = true;
+          if (f.state === "jump") f.state = "idle";
+        }
+
+        const infLevel = M01_Config.infusion.stageInfusionLevel;
+        const stage = STAGE_PRESETS[M01_Config.infusion.stageIndex] || STAGE_PRESETS[0];
+        const hazardWave = infLevel > 0 ? Math.sin(M01_Config.infusion.hazardPulsePhase) * stage.hazardAmp * (infLevel / 100) : 0;
+
+        this.ensureMeshDynamics(f);
+        const stiffness = M01_Config.infusion.meshSpringStiffness;
+        const damping = M01_Config.infusion.meshSpringDamping;
+        if (f.activeFrame && f.activeFrame.nodes) {
+          for (const [name, node] of Object.entries(f.activeFrame.nodes)) {
+            const dyn = f.meshDyn[name];
+            const tx = f.x + node.x * f.facing;
+            const ty = f.y + node.y + (name === "head" || name === "torso" ? hazardWave * 6 : 0);
+            const ax = (tx - dyn.wx) * stiffness - dyn.vx * damping;
+            const ay = (ty - dyn.wy) * stiffness - dyn.vy * damping;
+            dyn.vx += ax * subDt;
+            dyn.vy += ay * subDt;
+            dyn.wx += dyn.vx * subDt;
+            dyn.wy += dyn.vy * subDt;
+          }
+        }
+      },
+
+      solveConstraints(f, opp) {
+        f.x = Math.max(M01_Config.arenaLeft, Math.min(M01_Config.arenaRight, f.x));
+
+        const minSep = 44;
+        const dx = opp.x - f.x;
+        const dist = Math.abs(dx);
+        if (dist < minSep && Math.abs(f.y - opp.y) < 70) {
+          const push = (minSep - dist) * 0.5;
+          const dir = dx >= 0 ? -1 : 1;
+          f.x = Math.max(M01_Config.arenaLeft, Math.min(M01_Config.arenaRight, f.x + dir * push));
+        }
+
+        if (f.meshDyn && f.meshDyn.pelvis && f.meshDyn.torso && f.meshDyn.head) {
+          const relax = (a, b, targetLen) => {
+            const lx = b.wx - a.wx;
+            const ly = b.wy - a.wy;
+            const len = Math.hypot(lx, ly) || 1;
+            const diff = (len - targetLen) / len * 0.35;
+            a.wx += lx * diff;
+            a.wy += ly * diff;
+            b.wx -= lx * diff;
+            b.wy -= ly * diff;
+          };
+          relax(f.meshDyn.pelvis, f.meshDyn.torso, 40);
+          relax(f.meshDyn.torso, f.meshDyn.head, 36);
+        }
+
+        f.worldMesh = {};
+        if (f.activeFrame && f.activeFrame.nodes) {
+          for (const [name, node] of Object.entries(f.activeFrame.nodes)) {
+            const dyn = f.meshDyn[name] || { wx: f.x + node.x * f.facing, wy: f.y + node.y };
+            dyn.wx = Math.max(M01_Config.arenaLeft - 24, Math.min(M01_Config.arenaRight + 24, dyn.wx));
+            dyn.wy = Math.min(M01_Config.floorY + 6, dyn.wy);
+            f.worldMesh[name] = {
+              wx: dyn.wx,
+              wy: dyn.wy,
+              r: node.r,
+              type: node.type
+            };
+          }
+        }
+      },
+
+      advanceAnimation(f, dt) {
+        f.squashY += (1 - f.squashY) * Math.min(1, dt * 16);
+        f.animTimer += dt * 12;
+        const frameData = M02_SpriteMeshAtlas.getFrameData(f.fighterId, f.state, f.animTimer, f.squashY);
+        if (!frameData.loop && Math.floor(f.animTimer) >= frameData.totalFrames) {
+          if (f.state === "ko") {
+            f.animTimer = frameData.totalFrames - 1;
+          } else {
+            f.state = f.grounded ? "idle" : "jump";
+            f.animTimer = 0;
+          }
+        }
+        f.activeFrame = M02_SpriteMeshAtlas.getFrameData(f.fighterId, f.state, f.animTimer, f.squashY);
+      },
+
+      spawnProjectile(owner, opp) {
+        if (owner.state !== "projectile" || owner.spawnedProj) return;
+        const f = owner.activeFrame;
+        if (f && f.spawnProjFrame >= 0 && Math.floor(owner.animTimer) >= f.spawnProjFrame) {
+          owner.spawnedProj = true;
+          this.projectiles.push({
+            ownerSlot: owner.slot,
+            targetRef: opp,
+            x: owner.x + owner.facing * 54,
+            y: owner.y - 96,
+            vx: owner.facing * 520,
+            r: 15,
+            spec: f,
+            life: 2.2
+          });
+        }
+      },
+
+      stepProjectiles(dt) {
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          p.x += p.vx * dt;
+          p.life -= dt;
+          if (p.life <= 0 || p.x < M01_Config.arenaLeft - 40 || p.x > M01_Config.arenaRight + 40) {
+            this.projectiles.splice(i, 1);
+            continue;
+          }
+          const target = p.targetRef;
+          if (!target || target.state === "ko" || target.invulnTimer > 0) continue;
+          const hurtNodes = Object.values(target.worldMesh || {}).filter((n) => n.type === "HURT");
+          for (const u of hurtNodes) {
+            if (Math.hypot(p.x - u.wx, p.y - u.wy) <= p.r + u.r) {
+              M05_CombatResolver.applyImpact(
+                { slot: p.ownerSlot, facing: Math.sign(p.vx) || 1, state: "projectile" },
+                target,
+                p.spec,
+                p.x,
+                p.y
+              );
+              this.projectiles.splice(i, 1);
+              break;
+            }
+          }
+        }
+      },
+
+      triggerFinisher(attacker, defender, label = "STAGE INFUSION FATALITY") {
+        defender.hp = 0;
+        defender.state = "ko";
+        defender.animTimer = 0;
+        defender.squashY = 0.65;
+        attacker.score = (attacker.score || 0) + 50000;
+        if (!attacker.roundAwarded) {
+          attacker.wins = (attacker.wins || 0) + 1;
+          attacker.roundAwarded = true;
+        }
+
+        M01_Config.infusion.activeFinisherWindow = false;
+        M01_Config.infusion.finisherTimer = 0;
+        M01_Config.infusion.lastFinisher = `${attacker.fighterId}: ${label}`;
+        M01_Config.infusion.stageInfusionLevel = Math.min(100, M01_Config.infusion.stageInfusionLevel + 35);
+        M01_Config.infusion.stageIndex = (M01_Config.infusion.stageIndex + 1) % STAGE_PRESETS.length;
+        M01_Config.telemetry.hitstopFrames = 10;
+        M01_Config.telemetry.roundPhase = "ROUND_OVER";
+        this.addShake(15);
+
+        if (defender.meshDyn) {
+          for (const dyn of Object.values(defender.meshDyn)) {
+            dyn.vx += attacker.facing * 420;
+            dyn.vy -= 260;
+          }
+        }
+        M07_AudioFx.playFinisher();
+        const stage = STAGE_PRESETS[M01_Config.infusion.stageIndex];
+        M10_Renderer.spawnSpark(defender.x, defender.y - 80, stage.rimStroke);
+      }
+    };
+
+    // =========================================================================
+    // MODULE 05: COMBAT, BLOCKING, SCORING & FINISHER WINDOW RESOLVER
+    // =========================================================================
+    const M05_CombatResolver = {
+      isBlocking(defender, attackerFacing, attackSpec) {
+        if (!defender.grounded) return false;
+        if (attackSpec && attackSpec.unblockableClose) return false;
+        const busy = ["hp", "lp", "hk", "lk", "uppercut", "sweep", "roundhouse", "throw", "projectile", "hitstun", "blockstun", "ko"].includes(defender.state);
+        if (busy) return false;
+        return Boolean(defender.blocking) || defender.moveDir === -attackerFacing;
+      },
+
+      applyImpact(attacker, defender, spec, hitX, hitY) {
+        const blocked = this.isBlocking(defender, attacker.facing, spec);
+        if (blocked) {
+          defender.hp = Math.max(1, defender.hp - spec.chipDamage);
+          defender.vx = attacker.facing * (spec.knockbackX * 0.65);
+          defender.state = "blockstun";
+          defender.animTimer = 0;
+          defender.invulnTimer = 0.1;
+          if (attacker.combo !== undefined) attacker.combo = 0;
+          attacker.score = (attacker.score || 0) + 250;
+          M01_Config.telemetry.hitstopFrames = 3;
+          M04_MeshPhysics.addShake(3);
+          M07_AudioFx.playBlock();
+          M10_Renderer.spawnSpark(hitX, hitY, "#94a3b8");
+          return;
+        }
+
+        attacker.combo = (attacker.combo || 0) + 1;
+        const scaling = Math.max(0.55, 1 - (attacker.combo - 1) * 0.1);
+        const finalDamage = Math.max(2, Math.round(spec.damage * scaling));
+        attacker.score = (attacker.score || 0) + finalDamage * 100 * attacker.combo;
+
+        defender.hp = Math.max(0, defender.hp - finalDamage);
+        defender.vx = attacker.facing * spec.knockbackX;
+        defender.squashY = spec.knockdown ? 0.7 : 0.78;
+        defender.invulnTimer = 0.16;
+
+        if (defender.meshDyn) {
+          for (const dyn of Object.values(defender.meshDyn)) {
+            dyn.vx += attacker.facing * (spec.knockbackX * 0.85);
+            dyn.vy += (spec.launchY < 0 ? spec.launchY * 0.5 : -120);
+          }
+        }
+
+        M01_Config.telemetry.hitstopFrames = spec.damage >= 15 ? 6 : 4;
+        M04_MeshPhysics.addShake(spec.damage >= 15 ? 8 : 4);
+
+        if (spec.launchY < 0 && defender.hp > 0) {
+          defender.vy = spec.launchY;
+          defender.grounded = false;
+        }
+
+        if (defender.hp <= 0) {
+          defender.state = "ko";
+          defender.animTimer = 0;
+          attacker.combo = 0;
+          if (!attacker.roundAwarded && attacker.slot) {
+            attacker.wins = (attacker.wins || 0) + 1;
+            attacker.roundAwarded = true;
+          }
+          if (M01_Config.telemetry.roundPhase === "FIGHT") {
+            M01_Config.telemetry.roundPhase = "FINISH_HIM";
+            M01_Config.infusion.activeFinisherWindow = true;
+            M01_Config.infusion.finisherTimer = M01_ArcadeManualSpec.finisherWindowSeconds;
+          }
+        } else {
+          defender.state = "hitstun";
+          defender.animTimer = 0;
+        }
+
+        M07_AudioFx.playHit(spec.damage >= 14);
+        M10_Renderer.spawnSpark(hitX, hitY, spec.tint);
+      },
+
+      resolve(attacker, defender) {
+        if (!attacker.activeFrame || !attacker.activeFrame.isActiveHit) return;
+        if (attacker.hasConnectedThisAttack) return;
+        if (defender.state === "ko" || defender.invulnTimer > 0) return;
+
+        const hitNodes = Object.values(attacker.worldMesh).filter((n) => n.type === "HIT");
+        const hurtNodes = Object.values(defender.worldMesh).filter((n) => n.type === "HURT");
+
+        for (const h of hitNodes) {
+          for (const u of hurtNodes) {
+            if (Math.hypot(h.wx - u.wx, h.wy - u.wy) <= h.r + u.r) {
+              attacker.hasConnectedThisAttack = true;
+              this.applyImpact(
+                attacker,
+                defender,
+                attacker.activeFrame,
+                (h.wx + u.wx) * 0.5,
+                (h.wy + u.wy) * 0.5
+              );
+              return;
+            }
+          }
+        }
+      }
+    };
+
+    // =========================================================================
+    // MODULE 06: TACTICAL AI, ROUND TIMER & FINISH HIM DIRECTOR
+    // =========================================================================
+    const M06_AutonomousAI = {
+      stepFighterAI(f, opp, slot) {
+        if (["hitstun", "blockstun", "ko"].includes(f.state)) return;
+        if (M01_Config.infusion.activeFinisherWindow && opp.hp <= 0) {
+          if (Math.random() < 0.08) {
+            M04_MeshPhysics.triggerFinisher(f, opp, "AUTONOMOUS INFUSION");
+          }
+          return;
+        }
+
+        const diffScale = 0.65 + M01_Config.cabinetDip.difficulty * 0.14;
+        const dx = opp.x - f.x;
+        const dist = Math.abs(dx);
+        const dir = dx >= 0 ? 1 : -1;
+        const attacks = ["hp", "lp", "hk", "lk", "uppercut", "sweep", "roundhouse", "throw", "projectile", "hitstun", "blockstun", "ko"];
+
+        if (f.grounded && !attacks.includes(f.state)) {
+          f.blocking = false;
+          if (dist > 240) {
+            f.moveDir = dir;
+            f.state = "walk";
+            if (Math.random() < 0.025 * diffScale) M03_InputBus.pushCommand(slot, "projectile");
+          } else if (dist > 110) {
+            f.moveDir = dir;
+            f.state = "walk";
+          } else if (dist < 52 && Math.random() < 0.04 * diffScale) {
+            f.moveDir = -dir;
+            f.blocking = true;
+            f.state = "idle";
+          } else {
+            f.moveDir = 0;
+            f.state = "idle";
+            if (Math.random() < 0.075 * diffScale) {
+              if (dist < 72 && Math.random() < 0.25) M03_InputBus.pushCommand(slot, "throw");
+              else if (!opp.grounded && dist < 85) M03_InputBus.pushCommand(slot, "uppercut");
+              else if (dist > 95 && Math.random() < 0.35) M03_InputBus.pushCommand(slot, "sweep");
+              else M03_InputBus.pushCommand(slot, dist < 76 ? "HP" : "HK");
+            }
+          }
+        }
+      },
+
+      tickRoundAndFinisher(p1, p2, dt) {
+        M01_Config.infusion.hazardPulsePhase += dt * 4.5;
+        M01_Config.infusion.shakeIntensity = Math.max(0, M01_Config.infusion.shakeIntensity - dt * 36);
+
+        if (M01_Config.telemetry.roundPhase === "FIGHT") {
+          M01_Config.telemetry.roundClock = Math.max(0, M01_Config.telemetry.roundClock - dt);
+          if (M01_Config.telemetry.roundClock <= 0) {
+            M01_Config.telemetry.roundPhase = "ROUND_OVER";
+          }
+        } else if (M01_Config.telemetry.roundPhase === "FINISH_HIM") {
+          M01_Config.infusion.finisherTimer -= dt;
+          if (M01_Config.infusion.finisherTimer <= 0) {
+            M01_Config.infusion.activeFinisherWindow = false;
+            M01_Config.telemetry.roundPhase = "ROUND_OVER";
+          }
+        }
+
+        if (M01_Config.telemetry.roundPhase === "ROUND_OVER" || p1.hp <= 0 || p2.hp <= 0) {
+          p1.koResetTimer = (p1.koResetTimer || 0) + dt;
+          if (p1.koResetTimer >= 2.1) {
+            if (!p1.roundAwarded && !p2.roundAwarded) {
+              if (p1.hp >= p2.hp) p1.wins = (p1.wins || 0) + 1;
+              else p2.wins = (p2.wins || 0) + 1;
+            }
+            if (M01_Config.cabinetDip.autoAdaptDifficulty) {
+              if (p1.hp > p2.hp && M01_Config.cabinetDip.difficulty < 5) {
+                M01_Config.cabinetDip.difficulty += 1;
+              } else if (p2.hp > p1.hp && M01_Config.cabinetDip.difficulty > 1) {
+                M01_Config.cabinetDip.difficulty -= 1;
+              }
+            }
+            M01_Config.telemetry.roundNumber += 1;
+            p1.hp = 100; p2.hp = 100;
+            p1.x = 280; p2.x = 680;
+            p1.vx = 0; p2.vx = 0;
+            p1.vy = 0; p2.vy = 0;
+            p1.combo = 0; p2.combo = 0;
+            p1.roundAwarded = false; p2.roundAwarded = false;
+            p1.state = "idle"; p2.state = "idle";
+            p1.animTimer = 0; p2.animTimer = 0;
+            p1.koResetTimer = 0;
+            p1.meshDyn = null; p2.meshDyn = null;
+            M04_MeshPhysics.projectiles.length = 0;
+            M01_Config.infusion.activeFinisherWindow = false;
+            M01_Config.telemetry.roundPhase = "FIGHT";
+            M01_Config.telemetry.roundClock = M01_Config.cabinetDip.roundTime;
+          }
+        }
+      }
+    };
+
+    // =========================================================================
+    // MODULE 07: PROCEDURAL AUDIO SYNTHESIZER
+    // =========================================================================
+    const M07_AudioFx = {
+      ctx: null,
+      tone(freqStart, freqEnd, type, dur, vol) {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          if (!this.ctx) this.ctx = new AudioCtx();
+          if (this.ctx.state === "suspended") this.ctx.resume();
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freqStart, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), this.ctx.currentTime + dur);
+
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + dur);
+        } catch (_) {}
+      },
+      playHit(heavy) { this.tone(heavy ? 155 : 225, 42, heavy ? "sawtooth" : "triangle", 0.12, 0.11); },
+      playBlock() { this.tone(520, 310, "square", 0.07, 0.06); },
+      playFinisher() { this.tone(110, 36, "sawtooth", 0.35, 0.15); }
+    };
+
+    // =========================================================================
+    // MODULE 08: SELF-HEALING WATCHDOG, DIAGNOSTIC LOG & SNAPSHOT RECOVERY
+    // =========================================================================
+    const M08_Watchdog = {
+      snapshots: [],
+
+      recordHeal(reason) {
+        M01_Config.telemetry.healsPerformed += 1;
+        M01_Config.telemetry.lastHealReason = reason;
+        M01_Config.telemetry.healLog.push({
+          tick: M01_Config.telemetry.tickCount,
+          reason
+        });
+        if (M01_Config.telemetry.healLog.length > 25) {
+          M01_Config.telemetry.healLog.shift();
+        }
+      },
+
+      enforceCabinetDipRules() {
+        const dip = M01_Config.cabinetDip;
+        const inf = M01_Config.infusion;
+        if (dip.difficulty < 1 || dip.difficulty > 5) {
+          dip.difficulty = 3;
+          if (M01_Config.telemetry.selfHealEnabled) this.recordHeal("Normalized DIP difficulty");
+        }
+        if (dip.slamTilt) {
+          dip.slamTilt = false;
+          M01_Config.telemetry.hitstopFrames = 0;
+          if (M01_Config.telemetry.selfHealEnabled) this.recordHeal("Cleared cabinet SLAM TILT");
+        }
+        if (!Number.isFinite(inf.meshSpringStiffness) || inf.meshSpringStiffness < 20 || inf.meshSpringStiffness > 1200) {
+          inf.meshSpringStiffness = 265;
+          inf.springPreset = "CUSTOM";
+          if (M01_Config.telemetry.selfHealEnabled) this.recordHeal("Reset spring stiffness k");
+        }
+        if (!Number.isFinite(inf.meshSpringDamping) || inf.meshSpringDamping < 0 || inf.meshSpringDamping > 120) {
+          inf.meshSpringDamping = 22;
+          inf.springPreset = "CUSTOM";
+          if (M01_Config.telemetry.selfHealEnabled) this.recordHeal("Reset spring damping d");
+        }
+      },
+
+      captureSnapshot(state) {
+        if (M01_Config.telemetry.tickCount % M01_Config.snapshotIntervalTicks !== 0) return;
+        const snapFighter = (f) => ({
+          x: f.x, y: f.y, vx: f.vx, vy: f.vy,
+          facing: f.facing, grounded: f.grounded, hp: f.hp, state: f.state
+        });
+        this.snapshots.push({ p1: snapFighter(state.p1), p2: snapFighter(state.p2) });
+        if (this.snapshots.length > M01_Config.maxSnapshots) this.snapshots.shift();
+      },
+
+      restoreSnapshot(state) {
+        if (!M01_Config.telemetry.selfHealEnabled) return;
+        const snap = this.snapshots[this.snapshots.length - 1];
+        if (!snap) return;
+        for (const slot of ["p1", "p2"]) {
+          const f = state[slot];
+          const s = snap[slot];
+          if (!Number.isFinite(f.x) || !Number.isFinite(f.y) || !Number.isFinite(f.hp)) {
+            Object.assign(f, s, { animTimer: 0, meshDyn: null });
+          }
+        }
+      },
+
+      sanitizeFighter(f, fallbackX, fallbackFacing) {
+        if (!M01_Config.telemetry.selfHealEnabled) return;
+        let healed = false;
+        if (!M02_SpriteMeshAtlas.fighters.has(f.fighterId)) {
+          f.fighterId = "SCORPION_MK_REMIX"; healed = true;
+        }
+        if (!Number.isFinite(f.x) || f.x < M01_Config.arenaLeft || f.x > M01_Config.arenaRight) {
+          f.x = fallbackX; healed = true;
+        }
+        if (!Number.isFinite(f.y) || f.y > M01_Config.floorY || f.y < -260) {
+          f.y = M01_Config.floorY; f.vy = 0; f.grounded = true; healed = true;
+        }
+        if (!Number.isFinite(f.vx) || Math.abs(f.vx) > 2500) { f.vx = 0; healed = true; }
+        if (!Number.isFinite(f.vy) || Math.abs(f.vy) > 3500) { f.vy = 0; healed = true; }
+        if (!Number.isFinite(f.hp) || f.hp < 0 || f.hp > 100) { f.hp = 100; healed = true; }
+        if (!Number.isFinite(f.squashY) || f.squashY < 0.5 || f.squashY > 1.5) { f.squashY = 1; healed = true; }
+        if (!Number.isFinite(f.animTimer) || f.animTimer < 0) { f.animTimer = 0; healed = true; }
+        if (f.facing !== 1 && f.facing !== -1) { f.facing = fallbackFacing; healed = true; }
+
+        const validStates = Object.keys(mkAnims);
+        if (!validStates.includes(f.state)) {
+          f.state = "idle"; f.animTimer = 0; healed = true;
+        }
+
+        if (f.state !== "ko" && f.state === f.prevState) {
+          f.stateFrames = (f.stateFrames || 0) + 1;
+          if (f.stateFrames > M01_Config.maxStateFrames) {
+            f.state = "idle"; f.animTimer = 0; f.stateFrames = 0; healed = true;
+          }
+        } else {
+          f.prevState = f.state;
+          f.stateFrames = 0;
+        }
+
+        if (healed) this.recordHeal(`Healed ${f.slot}`);
+      },
+
+      exportStudioPayload(state) {
+        return JSON.stringify({
+          meta: {
+            engine: "MK-2D-SpriteMesh-Autonomous",
+            codePart: CODE_PART,
+            buildDate: BUILD_DATE,
+            exportedAt: new Date().toISOString(),
+            moduleCount: 10
+          },
+          manualSpec: M01_ArcadeManualSpec,
+          config: {
+            cabinetDip: M01_Config.cabinetDip,
+            infusion: M01_Config.infusion,
+            telemetry: {
+              roundNumber: M01_Config.telemetry.roundNumber,
+              tickCount: M01_Config.telemetry.tickCount,
+              healsPerformed: M01_Config.telemetry.healsPerformed,
+              healLog: M01_Config.telemetry.healLog
+            }
+          },
+          fighters: {
+            p1: { fighterId: state.p1.fighterId, wins: state.p1.wins, x: state.p1.x, y: state.p1.y, hp: state.p1.hp, score: state.p1.score, state: state.p1.state },
+            p2: { fighterId: state.p2.fighterId, wins: state.p2.wins, x: state.p2.x, y: state.p2.y, hp: state.p2.hp, score: state.p2.score, state: state.p2.state }
+          }
+        }, null, 2);
+      }
+    };
+
+    // =========================================================================
+    // MODULE 09: PHASED GAME & PHYSICS LOOP SCHEDULER
+    // =========================================================================
+    const M09_Scheduler = {
+      accumulator: 0,
+      lastTime: performance.now(),
+      fpsFrames: 0,
+      fpsClock: 0,
+
+      applyFighterControls(f, slot, autoEnabled) {
+        if (["hitstun", "blockstun", "ko"].includes(f.state)) return;
+        const attacks = ["hp", "lp", "hk", "lk", "uppercut", "sweep", "roundhouse", "throw", "projectile"];
+
+        if (autoEnabled) {
+          M06_AutonomousAI.stepFighterAI(f, f.oppRef, slot);
+        } else {
+          const stick = M03_InputBus.pollStick(slot, f.facing);
+          f.blocking = stick.blocking;
+          if (f.grounded && !attacks.includes(f.state)) {
+            if (stick.moveX !== 0) {
+              f.moveDir = stick.moveX;
+              f.state = "walk";
+            } else if (stick.crouch) {
+              f.moveDir = 0;
+              f.state = "crouch";
+            } else {
+              f.moveDir = 0;
+              f.state = "idle";
+            }
+          }
+        }
+
+        const rawCmd = M03_InputBus.consumeCommand(slot);
+        if (!rawCmd) return;
+
+        const stick = M03_InputBus.pollStick(slot, f.facing);
+        const resolved = M03_InputBus.resolveManualMove(f, f.oppRef, rawCmd, stick);
+        if (!resolved) return;
+
+        if (resolved === "FINISHER_STAGE_INFUSE") {
+          M04_MeshPhysics.triggerFinisher(f, f.oppRef, "MANUAL FINISHER");
+          return;
+        }
+
+        if (resolved === "jump" && f.grounded && !attacks.includes(f.state)) {
+          f.vy = -790;
+          f.grounded = false;
+          f.state = "jump";
+          f.animTimer = 0;
+        } else if (attacks.includes(resolved) && !attacks.includes(f.state)) {
+          f.state = resolved;
+          f.animTimer = 0;
+          f.hasConnectedThisAttack = false;
+          f.spawnedProj = false;
+          if (resolved === "uppercut" && f.grounded) {
+            f.vy = -520;
+            f.grounded = false;
+          }
+        }
+      },
+
+      fixedTick(state) {
+        const { p1, p2 } = state;
+        const baseDt = M01_Config.fixedDt;
+
+        // PRE_STEP
+        M08_Watchdog.enforceCabinetDipRules();
+        M08_Watchdog.sanitizeFighter(p1, 280, 1);
+        M08_Watchdog.sanitizeFighter(p2, 680, -1);
+
+        if (M01_Config.telemetry.hitstopFrames > 0) {
+          M01_Config.telemetry.hitstopFrames -= 1;
+          M01_Config.telemetry.tickCount += 1;
+          return;
+        }
+
+        // INPUT_AND_AI
+        p1.invulnTimer = Math.max(0, p1.invulnTimer - baseDt);
+        p2.invulnTimer = Math.max(0, p2.invulnTimer - baseDt);
+        this.applyFighterControls(p1, "p1", M01_Config.telemetry.p1Autonomous);
+        this.applyFighterControls(p2, "p2", M01_Config.telemetry.p2Autonomous);
+        M03_InputBus.tickQueues();
+
+        // KINEMATICS
+        const steps = Math.max(1, M01_Config.physicsSubsteps);
+        const subDt = baseDt / steps;
+        for (let s = 0; s < steps; s++) {
+          M04_MeshPhysics.integrateKinematics(p1, p2, subDt);
+          M04_MeshPhysics.integrateKinematics(p2, p1, subDt);
+          M01_Config.telemetry.substepCount += 1;
+        }
+        M04_MeshPhysics.advanceAnimation(p1, baseDt);
+        M04_MeshPhysics.advanceAnimation(p2, baseDt);
+        M04_MeshPhysics.spawnProjectile(p1, p2);
+        M04_MeshPhysics.spawnProjectile(p2, p1);
+
+        // CONSTRAINT_SOLVE
+        const iters = Math.max(1, M01_Config.constraintIterations);
+        for (let i = 0; i < iters; i++) {
+          M04_MeshPhysics.solveConstraints(p1, p2);
+          M04_MeshPhysics.solveConstraints(p2, p1);
+        }
+
+        // COMBAT_AND_FX
+        M04_MeshPhysics.stepProjectiles(baseDt);
+        M05_CombatResolver.resolve(p1, p2);
+        M05_CombatResolver.resolve(p2, p1);
+
+        // POST_STEP
+        M06_AutonomousAI.tickRoundAndFinisher(p1, p2, baseDt);
+        M08_Watchdog.captureSnapshot(state);
+        M01_Config.telemetry.tickCount += 1;
+      },
+
+      start(state) {
+        const step = (now) => {
+          const rawDt = (now - this.lastTime) / 1000;
+          this.lastTime = now;
+          const clampedDt = Math.min(M01_Config.maxFrameDt, Math.max(0, rawDt));
+          this.accumulator += clampedDt;
+
+          this.fpsFrames += 1;
+          this.fpsClock += clampedDt;
+          if (this.fpsClock >= 0.5) {
+            M01_Config.telemetry.fps = Math.round(this.fpsFrames / this.fpsClock);
+            this.fpsFrames = 0;
+            this.fpsClock = 0;
+          }
+
+          try {
+            while (this.accumulator >= M01_Config.fixedDt) {
+              this.fixedTick(state);
+              this.accumulator -= M01_Config.fixedDt;
+            }
+            M10_Renderer.render(state);
+          } catch (err) {
+            this.accumulator = 0;
+            M08_Watchdog.restoreSnapshot(state);
+            M08_Watchdog.recordHeal(`Recovered & restored snapshot: ${err && err.message ? err.message : "err"}`);
+          }
+
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+    };
+
+    // =========================================================================
+    // MODULE 10: RENDERER, DIAGNOSTIC OVERLAY, TEXTURE SYNTH & BOOTSTRAP
+    // =========================================================================
+    const M10_Renderer = {
+      canvas: document.getElementById("game"),
+      ctx: document.getElementById("game").getContext("2d"),
+      sparks: [],
+      patternCanvas: document.createElement("canvas"),
+      cachedPatternKey: "",
+      cachedPattern: null,
+
+      getStagePattern(stage, infusionLevel) {
+        const key = `${stage.id}_${stage.gridPitch}_${Math.floor(infusionLevel / 10)}`;
+        if (this.cachedPattern && this.cachedPatternKey === key) return this.cachedPattern;
+
+        const pitch = stage.gridPitch || 24;
+        this.patternCanvas.width = pitch * 2;
+        this.patternCanvas.height = pitch * 2;
+        const pctx = this.patternCanvas.getContext("2d");
+        pctx.fillStyle = stage.floorFill;
+        pctx.fillRect(0, 0, this.patternCanvas.width, this.patternCanvas.height);
+
+        pctx.strokeStyle = stage.rimStroke;
+        pctx.globalAlpha = 0.14 + (infusionLevel / 100) * 0.22;
+        pctx.lineWidth = 1;
+        pctx.strokeRect(0.5, 0.5, pitch - 1, pitch - 1);
+        pctx.strokeRect(pitch + 0.5, pitch + 0.5, pitch - 1, pitch - 1);
+
+        this.cachedPattern = this.ctx.createPattern(this.patternCanvas, "repeat");
+        this.cachedPatternKey = key;
+        return this.cachedPattern;
+      },
+
+      spawnSpark(x, y, color) {
+        const count = M01_Config.cabinetDip.bloodGore ? 12 : 6;
+        for (let i = 0; i < count; i++) {
+          const ang = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+          const spd = 95 + Math.random() * 190;
+          this.sparks.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 55, life: 0.28, color });
+        }
+      },
+
+      drawFighter(f) {
+        const ctx = this.ctx;
+        const frame = f.activeFrame;
+
+        if (f.worldMesh && f.worldMesh.pelvis && f.worldMesh.torso && f.worldMesh.head) {
+          ctx.save();
+          ctx.strokeStyle = frame ? frame.tint : "#f59e0b";
+          ctx.lineWidth = 6;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(f.worldMesh.pelvis.wx, f.worldMesh.pelvis.wy);
+          ctx.lineTo(f.worldMesh.torso.wx, f.worldMesh.torso.wy);
+          ctx.lineTo(f.worldMesh.head.wx, f.worldMesh.head.wy);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        if (M01_Config.telemetry.showMesh && f.worldMesh) {
+          const edges = [
+            ["pelvis", "torso"], ["torso", "head"],
+            ["torso", "frontHand"], ["torso", "backHand"],
+            ["pelvis", "frontFoot"], ["pelvis", "backFoot"]
+          ];
+          ctx.save();
+          ctx.strokeStyle = "rgba(148, 163, 184, 0.55)";
+          ctx.lineWidth = 2;
+          for (const [a, b] of edges) {
+            if (f.worldMesh[a] && f.worldMesh[b]) {
+              ctx.beginPath();
+              ctx.moveTo(f.worldMesh[a].wx, f.worldMesh[a].wy);
+              ctx.lineTo(f.worldMesh[b].wx, f.worldMesh[b].wy);
+              ctx.stroke();
+            }
+          }
+          for (const node of Object.values(f.worldMesh)) {
+            ctx.beginPath();
+            ctx.arc(node.wx, node.wy, node.r, 0, Math.PI * 2);
+            if (node.type === "HIT") {
+              ctx.fillStyle = "rgba(239, 68, 68, 0.36)";
+              ctx.strokeStyle = "#ef4444";
+            } else if (node.type === "HURT") {
+              ctx.fillStyle = "rgba(34, 197, 94, 0.16)";
+              ctx.strokeStyle = "#22c55e";
+            } else {
+              ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+              ctx.strokeStyle = "#38bdf8";
+            }
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      },
+
+      drawHud(p1, p2) {
+        const ctx = this.ctx;
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(40, 26, 380, 20);
+        ctx.fillRect(540, 26, 380, 20);
+
+        ctx.fillStyle = "#f59e0b";
+        ctx.fillRect(40, 26, (380 * p1.hp) / 100, 20);
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.fillRect(540 + (380 * (100 - p2.hp)) / 100, 26, (380 * p2.hp) / 100, 20);
+
+        ctx.fillStyle = M01_Config.infusion.activeFinisherWindow ? "#ef4444" : "#f8fafc";
+        ctx.font = "bold 18px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(String(Math.ceil(M01_Config.telemetry.roundClock)), 480, 42);
+
+        ctx.font = "11px monospace";
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillText(`ROUND ${M01_Config.telemetry.roundNumber}`, 480, 62);
+
+        if (M01_Config.infusion.activeFinisherWindow) {
+          ctx.font = "bold 22px monospace";
+          ctx.fillStyle = "#ef4444";
+          ctx.fillText(`FINISH HIM! (${M01_Config.infusion.finisherTimer.toFixed(1)}s)`, 480, 105);
+        }
+
+        const p1Spec = M02_SpriteMeshAtlas.fighters.get(p1.fighterId);
+        const p2Spec = M02_SpriteMeshAtlas.fighters.get(p2.fighterId);
+        const p1ComboStr = p1.combo > 1 ? ` x${p1.combo}` : "";
+        const p2ComboStr = p2.combo > 1 ? ` x${p2.combo}` : "";
+
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#cbd5e1";
+        ctx.font = "12px monospace";
+        ctx.fillText(`${p1Spec ? p1Spec.name : "P1"} [W:${p1.wins}] [${p1.state.toUpperCase()}] HP:${p1.hp} PTS:${p1.score}${p1ComboStr}`, 42, 64);
+        ctx.textAlign = "right";
+        ctx.fillText(`${p2Spec ? p2Spec.name : "P2"} [W:${p2.wins}] [${p2.state.toUpperCase()}] HP:${p2.hp} PTS:${p2.score}${p2ComboStr}`, 918, 64);
+        ctx.textAlign = "left";
+      },
+
+      drawDiagnostics(state) {
+        if (!M01_Config.telemetry.showDiagnostics) return;
+        const ctx = this.ctx;
+        const inf = M01_Config.infusion;
+        const t = M01_Config.telemetry;
+
+        const fmtFrame = (f) => {
+          const fr = f.activeFrame;
+          if (!fr) return `${f.state} [0/1]`;
+          return `${f.state}[${fr.idx + 1}/${fr.totalFrames}] hit:${fr.isActiveHit ? "Y" : "N"} dmg:${fr.damage} hs:${fr.hitstun} kb:${fr.knockbackX}`;
+        };
+
+        const recentLogs = t.healLog.slice(-4).map((e) => `t${e.tick}: ${e.reason}`);
+        const lines = [
+          `DIAG OVERLAY | FPS:${t.fps} TICK:${t.tickCount} PRESET:${inf.springPreset}`,
+          `SPRING k:${inf.meshSpringStiffness} d:${inf.meshSpringDamping} | INF:${inf.stageInfusionLevel}% SHAKE:${inf.shakeIntensity.toFixed(1)}`,
+          `P1 FRAME: ${fmtFrame(state.p1)}`,
+          `P2 FRAME: ${fmtFrame(state.p2)}`,
+          `WATCHDOG HEALS (${t.healsPerformed}): ${recentLogs.length ? recentLogs.join(" | ") : "No faults healed yet"}`
+        ];
+
+        const boxX = 42;
+        const boxY = 82;
+        const boxW = 540;
+        const boxH = 14 + lines.length * 14;
+
+        ctx.save();
+        ctx.fillStyle = "rgba(10, 15, 25, 0.78)";
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = "11px monospace";
+        lines.forEach((line, i) => {
+          ctx.fillStyle = i === 0 ? "#fcd34d" : i === 4 ? "#67e8f9" : "#cbd5e1";
+          ctx.fillText(line, boxX + 10, boxY + 15 + i * 14);
+        });
+        ctx.restore();
+      },
+
+      render(state) {
+        const ctx = this.ctx;
+        const stage = STAGE_PRESETS[M01_Config.infusion.stageIndex] || STAGE_PRESETS[0];
+        const inf = M01_Config.infusion.stageInfusionLevel;
+        const shake = M01_Config.infusion.shakeIntensity;
+        const sx = shake > 0 ? (Math.random() - 0.5) * shake * 2 : 0;
+        const sy = shake > 0 ? (Math.random() - 0.5) * shake * 2 : 0;
+
+        ctx.clearRect(0, 0, M01_Config.width, M01_Config.height);
+        ctx.save();
+        ctx.translate(sx, sy);
+
+        const pat = this.getStagePattern(stage, inf);
+        ctx.fillStyle = pat || stage.floorFill;
+        ctx.fillRect(0, M01_Config.floorY, M01_Config.width, M01_Config.height - M01_Config.floorY);
+        ctx.strokeStyle = stage.rimStroke;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, M01_Config.floorY);
+        ctx.lineTo(M01_Config.width, M01_Config.floorY);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+        if (inf > 0) {
+          const pulse = (Math.sin(M01_Config.infusion.hazardPulsePhase) + 1) * 0.5;
+          ctx.save();
+          ctx.fillStyle = stage.rimStroke;
+          ctx.globalAlpha = 0.14 + pulse * 0.2 * (inf / 100);
+          for (let hx = M01_Config.arenaLeft + 40; hx <= M01_Config.arenaRight - 40; hx += 120) {
+            ctx.fillRect(hx - 26, M01_Config.floorY + 8, 52, 10 + pulse * 10);
+          }
+          ctx.restore();
+        }
+
+        this.drawFighter(state.p1);
+        this.drawFighter(state.p2);
+
+        for (const p of M04_MeshPhysics.projectiles) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.spec ? p.spec.projectileColor : "#fb923c";
+          ctx.fill();
+          ctx.restore();
+        }
+
+        for (let i = this.sparks.length - 1; i >= 0; i--) {
+          const s = this.sparks[i];
+          s.x += s.vx * M01_Config.fixedDt;
+          s.y += s.vy * M01_Config.fixedDt;
+          s.life -= M01_Config.fixedDt;
+          if (s.life <= 0) { this.sparks.splice(i, 1); continue; }
+          ctx.fillStyle = s.color;
+          ctx.fillRect(s.x - 3, s.y - 3, 6, 6);
+        }
+
+        this.drawHud(state.p1, state.p2);
+        this.drawDiagnostics(state);
+        ctx.restore();
+
+        const sliderK = document.getElementById("slider-stiffness");
+        const valK = document.getElementById("val-stiffness");
+        const sliderD = document.getElementById("slider-damping");
+        const valD = document.getElementById("val-damping");
+        if (sliderK && document.activeElement !== sliderK) sliderK.value = String(M01_Config.infusion.meshSpringStiffness);
+        if (valK) valK.textContent = String(M01_Config.infusion.meshSpringStiffness);
+        if (sliderD && document.activeElement !== sliderD) sliderD.value = String(M01_Config.infusion.meshSpringDamping);
+        if (valD) valD.textContent = String(M01_Config.infusion.meshSpringDamping);
+
+        const t = M01_Config.telemetry;
+        document.getElementById("status").textContent =
+          `[${CODE_PART} ${BUILD_DATE}] ${stage.name} | Diff:${M01_Config.cabinetDip.difficulty} | Infuse:${inf}% | Heals:${t.healsPerformed} (${t.lastHealReason})`;
+      },
+
+      boot() {
+        M03_InputBus.init();
+        const makeFighter = (slot, fighterId, x, facing) => ({
+          slot, fighterId, x, y: M01_Config.floorY,
+          vx: 0, vy: 0, facing, moveDir: 0, blocking: false, grounded: true,
+          hp: 100, combo: 0, wins: 0, roundAwarded: false, score: 0, squashY: 1,
+          state: "idle", prevState: "idle", stateFrames: 0,
+          animTimer: 0, invulnTimer: 0,
+          hasConnectedThisAttack: false, spawnedProj: false,
+          worldMesh: {}, meshDyn: null, activeFrame: null, oppRef: null
+        });
+
+        const p1 = makeFighter("p1", "SCORPION_MK_REMIX", 280, 1);
+        const p2 = makeFighter("p2", "SUBZERO_MK_REMIX", 680, -1);
+        p1.oppRef = p2;
+        p2.oppRef = p1;
+
+        const state = { p1, p2 };
+
+        const btnMesh = document.getElementById("btn-mesh");
+        const btnDiag = document.getElementById("btn-diag");
+        const btnAutoP1 = document.getElementById("btn-auto-p1");
+        const btnAutoP2 = document.getElementById("btn-auto-p2");
+        const btnP1Roster = document.getElementById("btn-p1-roster");
+        const btnP2Roster = document.getElementById("btn-p2-roster");
+        const btnStage = document.getElementById("btn-stage");
+        const btnFinisher = document.getElementById("btn-finisher");
+        const btnHeal = document.getElementById("btn-heal");
+        const btnExport = document.getElementById("btn-export");
+        const btnChaos = document.getElementById("btn-chaos");
+        const sliderK = document.getElementById("slider-stiffness");
+        const valK = document.getElementById("val-stiffness");
+        const sliderD = document.getElementById("slider-damping");
+        const valD = document.getElementById("val-damping");
+        const presetButtons = {
+          bouncy: document.getElementById("preset-bouncy"),
+          stiff: document.getElementById("preset-stiff"),
+          watery: document.getElementById("preset-watery")
+        };
+
+        const syncPresetButtons = (activeKey) => {
+          for (const [key, btn] of Object.entries(presetButtons)) {
+            if (btn) btn.classList.toggle("active", key === activeKey);
+          }
+        };
+
+        const applySpringPreset = (presetKey) => {
+          const preset = SPRING_PRESETS[presetKey];
+          if (!preset) return;
+          M01_Config.infusion.springPreset = preset.id.toUpperCase();
+          M01_Config.infusion.meshSpringStiffness = preset.stiffness;
+          M01_Config.infusion.meshSpringDamping = preset.damping;
+          sliderK.value = String(preset.stiffness);
+          valK.textContent = String(preset.stiffness);
+          sliderD.value = String(preset.damping);
+          valD.textContent = String(preset.damping);
+          syncPresetButtons(presetKey);
+        };
+
+        presetButtons.bouncy.onclick = () => applySpringPreset("bouncy");
+        presetButtons.stiff.onclick = () => applySpringPreset("stiff");
+        presetButtons.watery.onclick = () => applySpringPreset("watery");
+
+        sliderK.oninput = () => {
+          const parsed = Number(sliderK.value);
+          M01_Config.infusion.meshSpringStiffness = parsed;
+          M01_Config.infusion.springPreset = "CUSTOM";
+          valK.textContent = String(parsed);
+          syncPresetButtons(null);
+        };
+        sliderD.oninput = () => {
+          const parsed = Number(sliderD.value);
+          M01_Config.infusion.meshSpringDamping = parsed;
+          M01_Config.infusion.springPreset = "CUSTOM";
+          valD.textContent = String(parsed);
+          syncPresetButtons(null);
+        };
+
+        const cycleRoster = (fighter, btn, prefix) => {
+          const order = M02_SpriteMeshAtlas.rosterOrder;
+          const idx = order.indexOf(fighter.fighterId);
+          fighter.fighterId = order[(idx + 1) % order.length];
+          fighter.meshDyn = null;
+          const spec = M02_SpriteMeshAtlas.fighters.get(fighter.fighterId);
+          btn.textContent = `${prefix}: ${spec ? spec.name : fighter.fighterId}`;
+        };
+
+        btnMesh.onclick = () => {
+          M01_Config.telemetry.showMesh = !M01_Config.telemetry.showMesh;
+          btnMesh.textContent = `2D Mesh: ${M01_Config.telemetry.showMesh ? "ON" : "OFF"}`;
+          btnMesh.classList.toggle("active", M01_Config.telemetry.showMesh);
+        };
+        btnDiag.onclick = () => {
+          M01_Config.telemetry.showDiagnostics = !M01_Config.telemetry.showDiagnostics;
+          btnDiag.textContent = `Diag HUD: ${M01_Config.telemetry.showDiagnostics ? "ON" : "OFF"}`;
+          btnDiag.classList.toggle("active", M01_Config.telemetry.showDiagnostics);
+        };
+        btnAutoP1.onclick = () => {
+          M01_Config.telemetry.p1Autonomous = !M01_Config.telemetry.p1Autonomous;
+          btnAutoP1.textContent = `P1 AI: ${M01_Config.telemetry.p1Autonomous ? "ON" : "OFF"}`;
+          btnAutoP1.classList.toggle("active", M01_Config.telemetry.p1Autonomous);
+        };
+        btnAutoP2.onclick = () => {
+          M01_Config.telemetry.p2Autonomous = !M01_Config.telemetry.p2Autonomous;
+          btnAutoP2.textContent = `P2 AI: ${M01_Config.telemetry.p2Autonomous ? "ON" : "OFF"}`;
+          btnAutoP2.classList.toggle("active", M01_Config.telemetry.p2Autonomous);
+        };
+        btnP1Roster.onclick = () => cycleRoster(p1, btnP1Roster, "P1");
+        btnP2Roster.onclick = () => cycleRoster(p2, btnP2Roster, "P2");
+        btnStage.onclick = () => {
+          M01_Config.infusion.stageIndex = (M01_Config.infusion.stageIndex + 1) % STAGE_PRESETS.length;
+          const st = STAGE_PRESETS[M01_Config.infusion.stageIndex];
+          btnStage.textContent = `Infuse Stage: ${st.name}`;
+        };
+        btnFinisher.onclick = () => {
+          M04_MeshPhysics.triggerFinisher(p1, p2, "MANUAL STAGE INFUSION");
+          const st = STAGE_PRESETS[M01_Config.infusion.stageIndex];
+          btnStage.textContent = `Infuse Stage: ${st.name}`;
+        };
+        btnHeal.onclick = () => {
+          M01_Config.telemetry.selfHealEnabled = !M01_Config.telemetry.selfHealEnabled;
+          btnHeal.textContent = `Self-Heal: ${M01_Config.telemetry.selfHealEnabled ? "ON" : "OFF"}`;
+          btnHeal.classList.toggle("active", M01_Config.telemetry.selfHealEnabled);
+        };
+        btnExport.onclick = () => {
+          const jsonText = M08_Watchdog.exportStudioPayload(state);
+          const blob = new Blob([jsonText], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `mk-studio-master-${BUILD_DATE}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        btnChaos.onclick = () => {
+          p1.x = NaN;
+          p2.hp = -50;
+          M01_Config.cabinetDip.slamTilt = true;
+          M01_Config.infusion.meshSpringStiffness = -999;
+          p1.state = "broken_state";
+          syncPresetButtons(null);
+        };
+
+        M09_Scheduler.start(state);
+      }
+    };
+
+    M10_Renderer.boot();
+  })();
+  </script>
+</body>
+</html>

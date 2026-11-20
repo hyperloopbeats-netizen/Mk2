@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MORTAL KOMBAT 3: DIMENSION-X / AIMIX SOVEREIGN ENGINE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #030305;
+            color: #f3f4f6;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+        .glass-panel {
+            background: rgba(10, 10, 15, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+        .arcade-btn {
+            background: linear-gradient(135deg, #1f2937 0%, #0b0f19 100%);
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.1);
+            transition: all 0.04s ease;
+        }
+        .arcade-btn:active, .arcade-btn.active {
+            transform: scale(0.93);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.9), inset 0 2px 4px rgba(0,0,0,0.7);
+        }
+        .stick-base {
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 70%, #020617 100%);
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9), inset 0 0 15px rgba(0,0,0,0.9);
+        }
+        .stick-handle {
+            background: radial-gradient(circle at 30% 30%, #f97316 0%, #c2410c 60%, #7c2d12 100%);
+            box-shadow: 0 6px 15px rgba(249, 115, 22, 0.7), inset -3px -3px 8px rgba(0,0,0,0.6), inset 3px 3px 8px rgba(255,255,255,0.4);
+        }
+        .stick-handle.blue {
+            background: radial-gradient(circle at 30% 30%, #3b82f6 0%, #1d4ed8 60%, #1e3a8a 100%);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.7), inset -3px -3px 8px rgba(0,0,0,0.6), inset 3px 3px 8px rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body class="h-[100dvh] w-[100vw] flex flex-col justify-between overflow-hidden p-1 m-0">
+
+    <!-- TOP HUD & STAGE SELECTOR -->
+    <header class="w-full h-[7%] glass-panel rounded-xl px-3 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-black tracking-widest text-orange-500 animate-pulse">DIMENSION-X: MK3</span>
+            <select id="stageSelect" class="bg-gray-900 text-xs text-gray-200 border border-orange-500/40 rounded px-2 py-1 outline-none font-bold">
+                <option value="courtyard">Yin-Yang Courtyard</option>
+                <option value="portal">Swirling Portal Vortex</option>
+                <option value="forest">Living Forest (Whispers)</option>
+                <option value="pit">The Pit & Spikes</option>
+                <option value="throne">Kahn's Arena (Crowd)</option>
+                <option value="aimix">AIMIX Sovereign Studio</option>
+            </select>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="text-center">
+                <div class="text-[9px] text-gray-400 font-bold">ROUND 1</div>
+                <div id="matchTimer" class="text-sm font-black text-amber-400">99</div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btnSound" class="arcade-btn px-2 py-1 rounded text-[10px] font-bold text-green-400">AUDIO: ON</button>
+            <button id="btnAutoToggle" class="arcade-btn px-2.5 py-1 rounded text-[10px] font-bold text-amber-400">CPU: OFF</button>
+        </div>
+    </header>
+
+    <!-- HEALTH, MANA, RUN & STAMINA METERS -->
+    <section class="w-full px-1 py-1 grid grid-cols-2 gap-2 z-20 shrink-0">
+        <!-- P1 FIGHTER -->
+        <div class="glass-panel p-2 rounded-xl border-l-4 border-orange-500">
+            <div class="flex justify-between items-center mb-0.5">
+                <span id="p1Name" class="text-xs font-black tracking-wider text-orange-400">SCORPION (P1)</span>
+                <span id="p1HealthText" class="text-xs font-bold text-gray-200">250 HP</span>
+            </div>
+            <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden p-0.5 border border-gray-700">
+                <div id="p1HealthBar" class="h-full bg-gradient-to-r from-red-600 via-orange-500 to-green-500 rounded-full transition-all duration-75" style="width: 100%;"></div>
+            </div>
+            <div class="flex justify-between mt-1 text-[8px] text-gray-400 font-bold">
+                <span>MANA: <span id="p1Mana" class="text-blue-400">100%</span></span>
+                <span>RUN: <span id="p1Run" class="text-amber-400">100%</span></span>
+                <span>WPN: <span id="p1Wpn" class="text-purple-400">3/3</span></span>
+            </div>
+        </div>
+
+        <!-- P2 FIGHTER / BOSS AIMIX -->
+        <div class="glass-panel p-2 rounded-xl border-r-4 border-cyan-500 text-right">
+            <div class="flex justify-between items-center mb-0.5 flex-row-reverse">
+                <span id="p2Name" class="text-xs font-black tracking-wider text-cyan-400">AIMIX (BOSS)</span>
+                <span id="p2HealthText" class="text-xs font-bold text-gray-200">250 HP</span>
+            </div>
+            <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden p-0.5 border border-gray-700">
+                <div id="p2HealthBar" class="h-full bg-gradient-to-l from-red-600 via-cyan-500 to-amber-400 rounded-full transition-all duration-75 ml-auto" style="width: 100%;"></div>
+            </div>
+            <div class="flex justify-between mt-1 text-[8px] text-gray-400 font-bold">
+                <span>WPN: <span id="p2Wpn" class="text-purple-400">∞</span></span>
+                <span>RUN: <span id="p2Run" class="text-cyan-400">100%</span></span>
+                <span>MANA: <span id="p2Mana" class="text-blue-400">100%</span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN GAME CANVAS VIEWPORT (92% Coverage - Structural Blueprint Rule) -->
+    <main class="relative w-full flex-grow rounded-2xl overflow-hidden glass-panel border border-orange-500/20 shadow-2xl flex items-center justify-center">
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
+        
+        <!-- Combat Action Banner / Announcer Overlay -->
+        <div id="combatLog" class="absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-black/80 border border-orange-500/60 text-orange-300 text-xs font-bold tracking-widest pointer-events-none transition-opacity duration-300">
+            ROUND 1 • FIGHT!
+        </div>
+
+        <!-- Finisher / Victory Announcer Banner -->
+        <div id="announcerBanner" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center hidden z-30 pointer-events-none">
+            <div id="announcerTitle" class="text-3xl md:text-5xl font-black text-red-600 tracking-widest animate-bounce drop-shadow-[0_0_25px_rgba(239,68,68,0.9)]">FINISH HIM</div>
+            <div id="announcerSubtitle" class="text-base font-bold text-amber-400 mt-2 tracking-widest">SCORPION WINS</div>
+        </div>
+    </main>
+
+    <!-- MK3 ERGONOMIC DUAL-STICK & COMBO CONTROL DECK -->
+    <footer class="w-full h-[32%] glass-panel rounded-2xl p-2 grid grid-cols-2 gap-3 items-center z-20 shrink-0">
+        
+        <!-- LEFT JOYSTICK: 8-WAY MOVEMENT, RUN & CROUCH -->
+        <div class="relative h-full flex items-center justify-center">
+            <div id="moveStickBase" class="stick-base relative w-36 h-36 rounded-full flex items-center justify-center touch-none">
+                <div class="absolute top-2 text-[9px] text-gray-500 font-bold pointer-events-none">JUMP</div>
+                <div class="absolute bottom-2 text-[9px] text-gray-500 font-bold pointer-events-none">CROUCH</div>
+                <div class="absolute left-2 text-[9px] text-gray-500 font-bold pointer-events-none">BACK</div>
+                <div class="absolute right-2 text-[9px] text-gray-500 font-bold pointer-events-none">RUN</div>
+                
+                <div id="moveStickHandle" class="stick-handle absolute w-16 h-16 rounded-full cursor-pointer transition-transform duration-75 flex items-center justify-center text-[10px] font-black text-white shadow-2xl">
+                    MOVE
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT RADIAL ATTACK STICK & MK3 ACTION BUTTONS -->
+        <div class="relative h-full flex flex-col justify-between">
+            <!-- Top MK3 Action Bar -->
+            <div class="grid grid-cols-4 gap-1 h-[26%]">
+                <button id="btnTag" class="arcade-btn rounded-lg text-[9px] font-black text-amber-400 flex items-center justify-center">TAG</button>
+                <button id="btnWpn" class="arcade-btn rounded-lg text-[9px] font-black text-purple-400 flex items-center justify-center">WPN</button>
+                <button id="btnSpec" class="arcade-btn rounded-lg text-[9px] font-black text-cyan-400 flex items-center justify-center">SPEC</button>
+                <button id="btnFatality" class="arcade-btn rounded-lg text-[9px] font-black text-red-500 animate-pulse flex items-center justify-center">FATALITY</button>
+            </div>
+
+            <!-- 8-Directional Attack & Dial-a-Combo Pad -->
+            <div class="relative flex-grow flex items-center justify-center">
+                <div id="attackStickBase" class="stick-base blue relative w-32 h-32 rounded-full flex items-center justify-center touch-none">
+                    <div class="absolute top-1 text-[8px] text-cyan-300 font-black pointer-events-none">UPPERCUT</div>
+                    <div class="absolute bottom-1 text-[8px] text-cyan-300 font-black pointer-events-none">SLIDE</div>
+                    <div class="absolute left-1 text-[8px] text-cyan-300 font-black pointer-events-none">BLOCK</div>
+                    <div class="absolute right-1 text-[8px] text-cyan-300 font-black pointer-events-none">HEAVY</div>
+
+                    <div id="attackStickHandle" class="stick-handle blue absolute w-14 h-14 rounded-full cursor-pointer transition-transform duration-75 flex items-center justify-center text-[9px] font-black text-white">
+                        COMBO
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SELF-HEALING STRUCTURAL BLUEPRINT ENGINE SCRIPT -->
+    <script>
+        // --- 0. SELF-DIAGNOSTIC & SELF-HEALING SAFEGUARD ---
+        window.addEventListener('error', function(e) {
+            console.error("[SELF-HEALING DAEMON CAUGHT ERROR]:", e.message);
+            const log = document.getElementById('combatLog');
+            if (log) log.innerText = `RESTORING ENGINE STATE...`;
+            setTimeout(() => { gameActive = true; matchPhase = 'FIGHT'; }, 500);
+        });
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            if (!canvas.parentElement) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let soundEnabled = true;
+        let cpuAuto = false;
+        let selectedStage = 'aimix';
+        let matchTimer = 99;
+        let gameActive = true;
+        let matchPhase = 'FIGHT';
+
+        // --- 1. PROCEDURAL AUDIO & BACKGROUND ACOUSTIC SYNTHESIZER ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, gainVal = 0.1) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(err) { console.warn("Audio Context Warning:", err); }
+        }
+
+        function playAmbientSoundtrackBeat() {
+            if (!soundEnabled || !gameActive) return;
+            // Generative Deep Club / Industrial Bass pulse aligned with user music interest
+            playTone(55, 'sawtooth', 0.4, 0.15);
+            setTimeout(() => playTone(110, 'square', 0.2, 0.08), 250);
+        }
+        setInterval(playAmbientSoundtrackBeat, 1200);
+
+        function speakAnnouncer(text) {
+            if (!soundEnabled) return;
+            try {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 0.55;
+                utterance.rate = 1.05;
+                utterance.volume = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } catch(err) { console.warn("Speech Synthesis Warning:", err); }
+        }
+
+        const inputState = { moveX: 0, moveY: 0 };
+
+        // --- 2. MULTI-STATE FIGHTER & SPRITE STATE MACHINE ---
+        class Fighter {
+            constructor(name, x, isCpu, color) {
+                this.name = name;
+                this.x = x;
+                this.y = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.width = 52;
+                this.height = 98;
+                this.isCpu = isCpu;
+                this.color = color;
+                this.health = 250;
+                this.maxHealth = 250;
+                this.mana = 100;
+                this.runMeter = 100;
+                this.weaponCharges = 3;
+                this.state = 'IDLE'; 
+                this.facing = isCpu ? -1 : 1;
+                this.activeHitbox = null;
+                this.bloodStains = []; // Fractal clothing blood stains
+            }
+
+            update(opponent) {
+                if (!gameActive) return;
+                const groundY = canvas.height * 0.72;
+
+                if (this.state === 'JUMP') {
+                    this.vy += 0.55;
+                    this.y += this.vy;
+                    if (this.y >= groundY) {
+                        this.y = groundY;
+                        this.vy = 0;
+                        this.state = 'IDLE';
+                    }
+                } else {
+                    this.y = groundY;
+                }
+
+                this.facing = this.x < opponent.x ? 1 : -1;
+
+                if (this.isCpu && cpuAuto) {
+                    if (Math.random() < 0.03 && this.state === 'IDLE') {
+                        const act = Math.random();
+                        if (act < 0.3) this.attack('HP');
+                        else if (act < 0.6) this.attack('UPPERCUT');
+                        else if (act < 0.8) this.attack('SLIDE');
+                        else this.useWeapon();
+                    } else if (Math.abs(this.x - opponent.x) > 150) {
+                        this.vx = this.facing * 4.0;
+                    } else {
+                        this.vx *= 0.8;
+                    }
+                }
+
+                this.x += this.vx;
+                this.x = Math.max(50, Math.min(canvas.width - 50, this.x));
+            }
+
+            attack(type) {
+                if (['ATTACK', 'UPPERCUT', 'SLIDE', 'HIT'].includes(this.state)) return;
+                
+                if (type === 'UPPERCUT') {
+                    this.state = 'UPPERCUT';
+                    playTone(80, 'square', 0.35, 0.25);
+                    speakAnnouncer("Toasty!");
+                } else if (type === 'SLIDE') {
+                    this.state = 'SLIDE';
+                    this.vx = this.facing * 10;
+                    playTone(200, 'triangle', 0.2, 0.12);
+                } else {
+                    this.state = 'ATTACK';
+                    playTone(150, 'sawtooth', 0.15, 0.15);
+                }
+
+                setTimeout(() => {
+                    const boxW = type === 'UPPERCUT' ? 45 : (type === 'SLIDE' ? 65 : 38);
+                    const boxH = type === 'UPPERCUT' ? 75 : (type === 'SLIDE' ? 25 : 32);
+                    const boxY = type === 'UPPERCUT' ? this.y - 110 : (type === 'SLIDE' ? this.y - 30 : this.y - 70);
+
+                    this.activeHitbox = {
+                        x: this.x + (this.facing * 30),
+                        y: boxY,
+                        w: boxW,
+                        h: boxH,
+                        damage: type === 'UPPERCUT' ? 35 : (type === 'SLIDE' ? 22 : 16),
+                        isUppercut: type === 'UPPERCUT'
+                    };
+
+                    document.getElementById('combatLog').innerText = `${this.name} -> ${type}!`;
+
+                    setTimeout(() => {
+                        this.activeHitbox = null;
+                        this.state = 'IDLE';
+                        if (type === 'SLIDE') this.vx = 0;
+                    }, 250);
+                }, 100);
+            }
+
+            useWeapon() {
+                if (this.weaponCharges <= 0 || this.mana < 25) {
+                    document.getElementById('combatLog').innerText = `MANA DEPLETED OR WEAPON EXHAUSTED!`;
+                    return;
+                }
+                this.weaponCharges--;
+                this.mana -= 25;
+                playTone(350, 'sawtooth', 0.4, 0.3);
+                speakAnnouncer(this.name === 'AIMIX' ? "Sound Wave Active" : "Get over here!");
+                document.getElementById('combatLog').innerText = `${this.name} UNLEASHED SIGNATURE WEAPON / SPECIAL!`;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                ctx.fillStyle = this.color;
+
+                // Multi-state sprite morphology
+                if (this.state === 'CROUCH') {
+                    ctx.fillRect(-this.width/2, -50, this.width, 50);
+                } else if (this.state === 'JUMP') {
+                    ctx.fillRect(-this.width/2 + 5, -this.height - 12, this.width - 10, this.height - 15);
+                } else if (this.state === 'RUN') {
+                    ctx.fillRect(-this.width/2, -this.height + 10, this.width, this.height - 10);
+                } else if (this.state === 'SLIDE') {
+                    ctx.fillRect(-this.width/2, -35, this.width + 18, 35);
+                } else if (this.state === 'UPPERCUT') {
+                    ctx.fillRect(-this.width/2, -this.height - 18, this.width, this.height + 18);
+                } else {
+                    ctx.fillRect(-this.width/2, -this.height, this.width, this.height);
+                }
+
+                // Head / Mask
+                ctx.fillStyle = '#030305';
+                ctx.fillRect(-15, this.state === 'CROUCH' ? -45 : -this.height - 22, 30, 20);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-10, this.state === 'CROUCH' ? -40 : -this.height - 16, 20, 8);
+
+                // Optic glow
+                ctx.fillStyle = this.name === 'AIMIX' ? '#f97316' : '#38bdf8';
+                ctx.fillRect(this.facing > 0 ? 3 : -11, this.state === 'CROUCH' ? -38 : -this.height - 14, 8, 4);
+
+                // Tiny fractal clothing blood stains
+                ctx.fillStyle = '#b91c1c';
+                this.bloodStains.forEach(stain => {
+                    ctx.fillRect(stain.x, stain.y, stain.s, stain.s);
+                });
+
+                ctx.restore();
+            }
+        }
+
+        const p1 = new Fighter('SCORPION', canvas.width * 0.32, false, '#c2410c');
+        const p2 = new Fighter('AIMIX', canvas.width * 0.68, true, '#0f172a'); // Black & Orange Sovereign Ninja
+        p2.color = '#f97316'; // AIMIX Signature Orange Accent
+
+        // --- 3. IMMERSIVE STAGE & FLUID BLOOD ENGINE ---
+        function drawBackground() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            if (selectedStage === 'aimix') {
+                let grad = ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, '#030305');
+                grad.addColorStop(0.5, '#1c1917');
+                grad.addColorStop(1, '#0b0f19');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                // Audio-reactive visual rings in background
+                ctx.strokeStyle = 'rgba(249, 115, 22, 0.2)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(w/2, h*0.35, 90 + Math.sin(Date.now()*0.005)*30, 0, Math.PI*2);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            const groundY = h * 0.72;
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(0, groundY, w, h - groundY);
+
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(w, groundY);
+            ctx.stroke();
+        }
+
+        let bloodParticles = [];
+        let screenSplatter = [];
+
+        function triggerBloodSplatter(x, y, isUppercut) {
+            playTone(95, 'sawtooth', 0.3, 0.35);
+            for (let i = 0; i < 15; i++) {
+                bloodParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12 - 3,
+                    radius: Math.random() * 3.5 + 2,
+                    life: 50
+                });
+            }
+            if (isUppercut) {
+                for (let i = 0; i < 10; i++) {
+                    screenSplatter.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * (canvas.height * 0.55),
+                        size: Math.random() * 14 + 6,
+                        life: 70
+                    });
+                }
+            }
+        }
+
+        function drawBloodAndFluidDynamics() {
+            ctx.fillStyle = '#dc2626';
+            bloodParticles.forEach((p, index) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                ctx.fill();
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.45;
+                if (p.y >= canvas.height * 0.72) {
+                    p.y = canvas.height * 0.72;
+                    p.vx = 0;
+                    p.vy = 0;
+                }
+                p.life--;
+                if (p.life <= 0) bloodParticles.splice(index, 1);
+            });
+
+            ctx.fillStyle = 'rgba(185, 28, 28, 0.9)';
+            screenSplatter.forEach((s, index) => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+                ctx.fill();
+                s.life--;
+                if (s.life <= 0) screenSplatter.splice(index, 1);
+            });
+        }
+
+        function checkCollisions() {
+            if (p1.activeHitbox && overlaps(p1.activeHitbox, p2)) {
+                p2.health -= p1.activeHitbox.damage;
+                p1.activeHitbox = null;
+                p2.bloodStains.push({ x: (Math.random()-0.5)*20, y: (Math.random()-0.5)*40, s: Math.random()*4+2 });
+                triggerBloodSplatter(p2.x, p2.y - 50, p2.activeHitbox?.isUppercut);
+            }
+            if (p2.activeHitbox && overlaps(p2.activeHitbox, p1)) {
+                p1.health -= p2.activeHitbox.damage;
+                p2.activeHitbox = null;
+                p1.bloodStains.push({ x: (Math.random()-0.5)*20, y: (Math.random()-0.5)*40, s: Math.random()*4+2 });
+                triggerBloodSplatter(p1.x, p1.y - 50, p1.activeHitbox?.isUppercut);
+            }
+
+            // Sync HUD
+            document.getElementById('p1HealthBar').style.width = Math.max(0, (p1.health / p1.maxHealth) * 100) + '%';
+            document.getElementById('p1HealthText').innerText = Math.max(0, p1.health) + ' HP';
+            document.getElementById('p1Mana').innerText = p1.mana + '%';
+            document.getElementById('p1Run').innerText = p1.runMeter + '%';
+            document.getElementById('p1Wpn').innerText = p1.weaponCharges + '/3';
+
+            document.getElementById('p2HealthBar').style.width = Math.max(0, (p2.health / p2.maxHealth) * 100) + '%';
+            document.getElementById('p2HealthText').innerText = Math.max(0, p2.health) + ' HP';
+            document.getElementById('p2Mana').innerText = p2.mana + '%';
+            document.getElementById('p2Run').innerText = p2.runMeter + '%';
+
+            if ((p1.health <= 0 || p2.health <= 0) && matchPhase === 'FIGHT') {
+                matchPhase = 'FINISH_HIM';
+                gameActive = false;
+                speakAnnouncer("Finish Him!");
+                document.getElementById('announcerTitle').innerText = 'FINISH HIM';
+                document.getElementById('announcerSubtitle').innerText = p1.health <= 0 ? 'AIMIX WINS' : 'SCORPION WINS';
+                document.getElementById('announcerBanner').classList.remove('hidden');
+            }
+        }
+
+        function overlaps(box, fighter) {
+            const fBox = { x: fighter.x - fighter.width/2, y: fighter.y - fighter.height, w: fighter.width, h: fighter.height };
+            return box.x < fBox.x + fBox.w && box.x + box.w > fBox.x && box.y < fBox.y + fBox.h && box.y + box.h > fBox.y;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+
+            p1.vx = inputState.moveX * 5.0;
+            if (inputState.moveY < -0.6 && p1.state !== 'JUMP') {
+                p1.state = 'JUMP';
+                p1.vy = -13;
+                playTone(250, 'sine', 0.1, 0.05);
+            } else if (inputState.moveY > 0.6) {
+                p1.state = 'CROUCH';
+            } else if (inputState.moveX > 0.8 && p1.runMeter > 5) {
+                p1.state = 'RUN';
+                p1.runMeter = Math.max(0, p1.runMeter - 0.4);
+            } else if (!['ATTACK', 'UPPERCUT', 'SLIDE', 'JUMP'].includes(p1.state)) {
+                p1.state = inputState.moveX !== 0 ? 'WALK' : 'IDLE';
+            }
+
+            p1.update(p2);
+            p2.update(p1);
+
+            checkCollisions();
+
+            p1.draw();
+            p2.draw();
+            drawBloodAndFluidDynamics();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 4. CONTROLLER & EVENT BINDINGS ---
+        function setupJoystick(baseId, handleId, callback) {
+            const base = document.getElementById(baseId);
+            const handle = document.getElementById(handleId);
+            let active = false;
+            let center = { x: 0, y: 0 };
+
+            function start(e) {
+                active = true;
+                const rect = base.getBoundingClientRect();
+                center = { x: rect.width / 2, y: rect.height / 2 };
+                move(e);
+            }
+
+            function move(e) {
+                if (!active) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const rect = base.getBoundingClientRect();
+                const x = touch.clientX - rect.left - center.x;
+                const y = touch.clientY - rect.top - center.y;
+                const dist = Math.hypot(x, y);
+                const maxDist = rect.width / 2 - 18;
+                const angle = Math.atan2(y, x);
+                const clampedDist = Math.min(dist, maxDist);
+                handle.style.transform = `translate(${Math.cos(angle)*clampedDist}px, ${Math.sin(angle)*clampedDist}px)`;
+                callback(Math.cos(angle)*(clampedDist/maxDist), Math.sin(angle)*(clampedDist/maxDist));
+            }
+
+            function end() {
+                if (!active) return;
+                active = false;
+                handle.style.transform = `translate(0px, 0px)`;
+                callback(0, 0);
+            }
+
+            base.addEventListener('touchstart', start);
+            window.addEventListener('touchmove', move);
+            window.addEventListener('touchend', end);
+            base.addEventListener('mousedown', start);
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+        }
+
+        setupJoystick('moveStickBase', 'moveStickHandle', (x, y) => {
+            inputState.moveX = x;
+            inputState.moveY = y;
+        });
+
+        setupJoystick('attackStickBase', 'attackStickHandle', (x, y) => {
+            if (Math.hypot(x, y) > 0.4) {
+                if (y < -0.5) p1.attack('UPPERCUT');
+                else if (y > 0.5) p1.attack('SLIDE');
+                else if (x < -0.5) p1.attack('HP');
+                else if (x > 0.5) p1.attack('HK');
+            }
+        });
+
+        document.getElementById('btnTag').addEventListener('click', () => {
+            playTone(350, 'sine', 0.2, 0.1);
+            document.getElementById('combatLog').innerText = `TAG SWAP EXECUTED!`;
+        });
+
+        document.getElementById('btnWpn').addEventListener('click', () => p1.useWeapon());
+        
+        document.getElementById('btnSpec').addEventListener('click', () => {
+            if (p1.mana >= 30) {
+                p1.mana -= 30;
+                playTone(400, 'triangle', 0.3, 0.2);
+                speakAnnouncer("Get over here!");
+                document.getElementById('combatLog').innerText = `SPEAR HARPOON EXECUTED!`;
+            }
+        });
+
+        document.getElementById('btnFatality').addEventListener('click', () => {
+            matchPhase = 'FATALITY';
+            speakAnnouncer("Flawless Victory. Fatality. Scorpion wins.");
+            document.getElementById('announcerTitle').innerText = 'FATALITY';
+            document.getElementById('announcerSubtitle').innerText = 'SCORPION WINS';
+            document.getElementById('announcerBanner').classList.remove('hidden');
+        });
+
+        document.getElementById('stageSelect').addEventListener('change', (e) => {
+            selectedStage = e.target.value;
+        });
+
+        document.getElementById('btnSound').addEventListener('click', (e) => {
+            soundEnabled = !soundEnabled;
+            e.target.innerText = `AUDIO: ${soundEnabled ? 'ON' : 'OFF'}`;
+        });
+
+        document.getElementById('btnAutoToggle').addEventListener('click', (e) => {
+            cpuAuto = !cpuAuto;
+            e.target.innerText = `CPU: ${cpuAuto ? 'ON' : 'OFF'}`;
+        });
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

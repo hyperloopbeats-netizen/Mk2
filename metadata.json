@@ -1,0 +1,8 @@
+{
+  "name": "MK2",
+  "description": "A high-octane mobile-first Mortal Kombat fighting game featuring authentic signature special combat abilities (Scorpion, Sub-Zero, Smoke, Raiden), tactical 4-zone anatomical damage, fluid multitouch arcade controls, synthesized retro audio, and iconic Fatalities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
